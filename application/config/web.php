@@ -52,6 +52,11 @@ $config = [
         */
     ],
     'params' => $params,
+    'modules' => [
+        'listing' => [
+            'class' => 'app\modules\listing\Module'
+        ],
+    ],
 ];
 
 if (YII_ENV_DEV) {
