@@ -15,8 +15,8 @@ class Order extends ActiveRecord
     public const STATUSES = [
         self::STATUS_CODE_PENDING => ['slug' => 'pending', 'title' => 'Pending'],
         self::STATUS_CODE_IN_PROGRESS => ['slug' => 'inprogress', 'title' => 'In progress'],
-        self::STATUS_CODE_CANCELED => ['slug' => 'canceled', 'title' => 'Canceled'],
         self::STATUS_CODE_COMPLETED => ['slug' => 'completed', 'title' => 'Completed'],
+        self::STATUS_CODE_CANCELED => ['slug' => 'canceled', 'title' => 'Canceled'],
         self::STATUS_CODE_ERROR => ['slug' => 'error', 'title' => 'Error'],
     ];
 
@@ -35,7 +35,7 @@ class Order extends ActiveRecord
         return null;
     }
 
-    public static function getOrders(?int $status = null, int $offset = 0, int $limit = 100)
+    public static function getOrdersQuery(?int $status = null)
     {
         $query = new Query();
         $query->select([
@@ -54,13 +54,11 @@ class Order extends ActiveRecord
             ->innerJoin('users u', 'o.user_id = u.id')
             ->innerJoin('services s', 'o.service_id = s.id')
             ->orderBy(['o.id' => SORT_DESC])
-            ->limit($limit)
-            ->offset($offset)
         ;
         if (!is_null($status)) {
             $query->where('o.status=:status', [':status' => $status]);
         }
 
-        return $query->all();
+        return $query;
     }
 }

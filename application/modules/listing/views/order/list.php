@@ -1,6 +1,6 @@
 <?php
-use app\modules\listing\models\Order;
 use yii\helpers\Url;
+use yii\widgets\LinkPager;
 ?>
 
 <nav class="navbar navbar-fixed-top navbar-default">
@@ -22,14 +22,14 @@ use yii\helpers\Url;
 </nav>
 <div class="container-fluid">
     <ul class="nav nav-tabs p-b">
-        <li <?php if (!$current_status_slug): ?>class="active"<?php endif; ?>>
+        <li <?php if (!$current_slug): ?>class="active"<?php endif; ?>>
             <a href="<?= Url::toRoute(['/listing/order/list']) ?>">
                 All orders
             </a>
         </li>
         <?php foreach ($statuses as $status): ?>
-            <li <?php if ($current_status_slug === $status['slug']): ?>class="active"<?php endif; ?>>
-                <a href="<?= Url::toRoute(['/listing/order/list', 'statusSlug' => $status['slug']]) ?>">
+            <li <?php if ($current_slug === $status['slug']): ?>class="active"<?php endif; ?>>
+                <a href="<?= Url::toRoute(['/listing/order/list', 'slug' => $status['slug']]) ?>">
                     <?= $status['title'] ?>
                 </a>
             </li>
@@ -112,27 +112,12 @@ use yii\helpers\Url;
     </table>
     <div class="row">
         <div class="col-sm-8">
-
             <nav>
-                <ul class="pagination">
-                    <li class="disabled"><a href="" aria-label="Previous">&laquo;</a></li>
-                    <li class="active"><a href="">1</a></li>
-                    <li><a href="">2</a></li>
-                    <li><a href="">3</a></li>
-                    <li><a href="">4</a></li>
-                    <li><a href="">5</a></li>
-                    <li><a href="">6</a></li>
-                    <li><a href="">7</a></li>
-                    <li><a href="">8</a></li>
-                    <li><a href="">9</a></li>
-                    <li><a href="">10</a></li>
-                    <li><a href="" aria-label="Next">&raquo;</a></li>
-                </ul>
+                <?= LinkPager::widget(['pagination' => $pagination]) ?>
             </nav>
-
         </div>
         <div class="col-sm-4 pagination-counters">
-            1 to 100 of 3263
+            1 to <?= $orders_per_page ?> of <?= $total_orders_number ?>
         </div>
     </div>
 </div>
