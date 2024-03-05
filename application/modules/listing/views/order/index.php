@@ -1,3 +1,8 @@
+<?php
+use app\modules\listing\models\Order;
+use yii\helpers\Url;
+?>
+
 <nav class="navbar navbar-fixed-top navbar-default">
     <div class="container-fluid">
         <div class="navbar-header">
@@ -10,19 +15,25 @@
         </div>
         <div class="collapse navbar-collapse" id="bs-navbar-collapse">
             <ul class="nav navbar-nav">
-                <li class="active"><a href="#">Orders</a></li>
+                <li class="active"><a href="<?= Url::toRoute(['/listing/order/list']) ?>">Orders</a></li>
             </ul>
         </div>
     </div>
 </nav>
 <div class="container-fluid">
     <ul class="nav nav-tabs p-b">
-        <li class="active"><a href="#">All orders</a></li>
-        <li><a href="#">Pending</a></li>
-        <li><a href="#">In progress</a></li>
-        <li><a href="#">Completed</a></li>
-        <li><a href="#">Canceled</a></li>
-        <li><a href="#">Error</a></li>
+        <li <?php if (!$current_status_slug): ?>class="active"<?php endif; ?>>
+            <a href="<?= Url::toRoute(['/listing/order/list']) ?>">
+                All orders
+            </a>
+        </li>
+        <?php foreach ($statuses as $status): ?>
+            <li <?php if ($current_status_slug === $status['slug']): ?>class="active"<?php endif; ?>>
+                <a href="<?= Url::toRoute(['/listing/order/list', 'statusSlug' => $status['slug']]) ?>">
+                    <?= $status['title'] ?>
+                </a>
+            </li>
+        <?php endforeach; ?>
         <li class="pull-right custom-search">
             <form class="form-inline" action="/admin/orders" method="get">
                 <div class="input-group">
@@ -92,7 +103,7 @@
                 <td class="service">
                     <span class="label-id"><?= $order['service_id'] ?></span> <?= $order['service_name'] ?>
                 </td>
-                <td><?= $order['status'] ?></td>
+                <td><?= $statuses[$order['status']]['title'] ?></td>
                 <td><?= $order['mode'] ?></td>
                 <td><span class="nowrap"><?= $order['created_date'] ?></span><span class="nowrap"><?= $order['created_time'] ?></span></td>
             </tr>

@@ -42,14 +42,15 @@ $config = [
             ],
         ],
         'db' => $db,
-        /*
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
+            'enableStrictParsing' => false,
             'rules' => [
+                'orders/<statusSlug:pending|inprogress|completed|canceled|error>' => 'listing/order/list',
+                'orders' => 'listing/order/list',
             ],
         ],
-        */
     ],
     'params' => $params,
     'modules' => [

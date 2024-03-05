@@ -2,28 +2,20 @@
 
 namespace app\modules\listing\controllers;
 
+use app\modules\listing\models\Order;
 use yii;
 use yii\web\Controller;
 
 class OrderController extends Controller
 {
-    public function actionIndex()
+    public function actionList(string $statusSlug = '')
     {
-        $db = Yii::$app->db;
-        $sql = "
-            SELECT o.id, CONCAT(u.first_name, ' ', u.last_name) user, o.link, o.quantity, o.service_id,
-                s.name service_name, o.status, o.mode, FROM_UNIXTIME(o.created_at, \"%Y-%m-%d\") created_date,
-                FROM_UNIXTIME(o.created_at, \"%h:%i:%s\") created_time
-            FROM orders o
-                INNER JOIN users u
-                    ON o.user_id = u.id
-                INNER JOIN services s
-                    ON o.service_id = s.id
-            ORDER BY id LIMIT 20
-        ";
-        $orders = Yii::$app->db->createCommand($sql)->queryAll();
+        $status = Order::getStatusCodeBySlug($statusSlug);
+        $orders = Order::getOrders($status);
         return $this->render('index', [
             'orders' => $orders,
+            'statuses' => Order::STATUSES,
+            'current_status_slug' => $statusSlug,
         ]);
     }
 }
