@@ -65,14 +65,23 @@ use yii\widgets\LinkPager;
                         <span class="caret"></span>
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-                        <li class="active"><a href="">All (894931)</a></li>
-                        <li><a href=""><span class="label-id">214</span>  Real Views</a></li>
-                        <li><a href=""><span class="label-id">215</span> Page Likes</a></li>
-                        <li><a href=""><span class="label-id">10</span> Page Likes</a></li>
-                        <li><a href=""><span class="label-id">217</span> Page Likes</a></li>
-                        <li><a href=""><span class="label-id">221</span> Followers</a></li>
-                        <li><a href=""><span class="label-id">224</span> Groups Join</a></li>
-                        <li><a href=""><span class="label-id">230</span> Website Likes</a></li>
+                        <li <?php if (!$selected_service_id): ?>class="active"<?php endif; ?>>
+                            <a href="<?= Url::current(['service_id' => null]) ?>">
+                                All (<?= $total_orders_number ?>)
+                            </a>
+                        </li>
+                        <?php foreach ($services as $service): ?>
+                            <li
+                                <?php if ($selected_service_id == $service['id']): ?>
+                                    class="active"
+                                <?php elseif (!$service['orders_number']): ?>
+                                    class="disabled" aria-disabled="true"
+                                <?php endif; ?>>
+                                <a href="<?= Url::current(['service_id' => $service['id']]) ?>">
+                                    <span class="label-id"><?= $service['orders_number'] ?></span> <?= $service['name'] ?>
+                                </a>
+                            </li>
+                        <?php endforeach; ?>
                     </ul>
                 </div>
             </th>
@@ -113,7 +122,7 @@ use yii\widgets\LinkPager;
                     <span class="label-id"><?= $order['service_id'] ?></span> <?= $order['service_name'] ?>
                 </td>
                 <td><?= $statuses[$order['status']]['title'] ?></td>
-                <td><?= $order['mode'] ?></td>
+                <td><?= $modes[$order['mode']]['title'] ?></td>
                 <td><span class="nowrap"><?= $order['created_date'] ?></span><span class="nowrap"><?= $order['created_time'] ?></span></td>
             </tr>
         <?php endforeach; ?>

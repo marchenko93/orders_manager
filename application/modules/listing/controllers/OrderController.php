@@ -31,7 +31,15 @@ class OrderController extends Controller
             }
         }
 
-        $query = Order::getOrdersQuery($statusCode, $modeCode);
+        $serviceId = Yii::$app->request->get('service_id');
+        $services = Order::getServices($statusCode, $modeCode);
+        if (!is_null($serviceId)) {
+            if (!array_key_exists($serviceId, $services)) {
+                throw new HttpException(400, 'Invalid service.');
+            }
+        }
+
+        $query = Order::getOrdersQuery($statusCode, $modeCode, $serviceId);
         $totalOrdersNumber = $query->count();
         $pagination = new Pagination([
             'pageSizeLimit' => [1, self::ORDERS_PER_PAGE],
@@ -42,10 +50,12 @@ class OrderController extends Controller
 
         return $this->render('list', [
             'orders' => $query->all(),
-            'statuses' => Order::STATUSES,
+            'statuses' => Order::getStatuses(),
             'selected_status' => $status,
-            'modes' => Order::MODES,
+            'modes' => Order::getModes(),
             'selected_mode' => $mode,
+            'services' => Order::getServices($statusCode, $modeCode),
+            'selected_service_id' => $serviceId,
             'pagination' => $pagination,
             'orders_per_page' => self::ORDERS_PER_PAGE,
             'total_orders_number' => $totalOrdersNumber,
