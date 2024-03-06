@@ -25,6 +25,14 @@ class Order extends ActiveRecord
         self::MODE_CODE_MANUAL => ['name' => 'manual', 'title' => 'Manual'],
         self::MODE_CODE_AUTO => ['name' => 'auto', 'title' => 'Auto'],
     ];
+    protected const SEARCH_TYPE_ORDER_ID = 1;
+    protected const SEARCH_TYPE_LINK = 2;
+    protected const SEARCH_TYPE_USERNAME = 3;
+    protected const SEARCH_TYPES = [
+        self::SEARCH_TYPE_ORDER_ID => ['name' => 'o.id', 'title' => 'Order ID'],
+        self::SEARCH_TYPE_LINK => ['name' => 'o.link', 'title' => 'Link'],
+        self::SEARCH_TYPE_USERNAME => ['name' => 'CONCAT(u.first_name, " ", u.last_name)', 'title' => 'Username'],
+    ];
 
     public static function tableName()
     {
@@ -61,6 +69,11 @@ class Order extends ActiveRecord
         return static::MODES;
     }
 
+    public static function getSearchTypes(): array
+    {
+        return static::SEARCH_TYPES;
+    }
+
     public static function getServices(?int $statusCode = null, ?int $modeCode = null): array
     {
         $query = new Query();
@@ -89,7 +102,7 @@ class Order extends ActiveRecord
         return $query->indexBy('id')->all();
     }
 
-    public static function getOrdersQuery(?int $statusCode = null, ?int $modeCode = null, ?int $serviceId = null)
+    public static function getOrdersQuery(?int $statusCode = null)
     {
         $query = new Query();
         $query->select([
@@ -112,6 +125,12 @@ class Order extends ActiveRecord
         if (!is_null($statusCode)) {
             $query->andWhere('o.status=:status', [':status' => $statusCode]);
         }
+        return $query;
+    }
+
+    public static function getFilterOrdersQuery(?int $statusCode = null, ?int $modeCode = null, ?int $serviceId = null)
+    {
+        $query = static::getOrdersQuery($statusCode);
         if (!is_null($modeCode)) {
             $query->andWhere('o.mode=:mode', [':mode' => $modeCode]);
         }
@@ -119,6 +138,15 @@ class Order extends ActiveRecord
             $query->andWhere('s.id=:id', [':id' => $serviceId]);
         }
 
+        return $query;
+    }
+
+    public static function getSearchOrdersQuery(int $searchTypeCode, string $search, ?int $statusCode = null)
+    {
+        $query = static::getOrdersQuery($statusCode);
+        $searchType = static::SEARCH_TYPES[$searchTypeCode]['name'];
+        $operation = static::SEARCH_TYPE_ORDER_ID == $searchTypeCode ? '=' : 'LIKE';
+        $query->andWhere([$operation, $searchType, $search]);
         return $query;
     }
 }

@@ -1,4 +1,5 @@
 <?php
+use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\widgets\LinkPager;
 ?>
@@ -35,15 +36,15 @@ use yii\widgets\LinkPager;
             </li>
         <?php endforeach; ?>
         <li class="pull-right custom-search">
-            <form class="form-inline" action="/admin/orders" method="get">
+            <form class="form-inline" action="<?= Url::current() ?>" method="get">
                 <div class="input-group">
-                    <input type="text" name="search" class="form-control" value="" placeholder="Search orders">
+                    <input type="text" name="search" class="form-control" value="<?= Html::encode($search) ?>" placeholder="Search orders">
                     <span class="input-group-btn search-select-wrap">
 
                     <select class="form-control search-select" name="search-type">
-                          <option value="1" selected="">Order ID</option>
-                          <option value="2">Link</option>
-                          <option value="3">Username</option>
+                        <?php foreach ($search_types as $code => $type): ?>
+                            <option value="<?= $code ?>" <?php if ($code == $selected_search_type): ?>selected=""<?php endif; ?>><?= $type['title'] ?></option>
+                        <?php endforeach; ?>
                     </select>
                     <button type="submit" class="btn btn-default"><span class="glyphicon glyphicon-search" aria-hidden="true"></span></button>
                     </span>

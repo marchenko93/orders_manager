@@ -22,24 +22,33 @@ class OrderController extends Controller
             }
         }
 
-        $modeCode = null;
+        $search = Yii::$app->request->get('search');
         $mode = Yii::$app->request->get('mode');
-        if (!is_null($mode)) {
-            $modeCode = Order::getModeCodeByName($mode);
-            if (is_null($modeCode)) {
-                throw new HttpException(400, 'Invalid mode.');
-            }
-        }
-
         $serviceId = Yii::$app->request->get('service_id');
-        $services = Order::getServices($statusCode, $modeCode);
-        if (!is_null($serviceId)) {
-            if (!array_key_exists($serviceId, $services)) {
-                throw new HttpException(400, 'Invalid service.');
+        $searchTypeCode = Yii::$app->request->get('search-type');
+        $modeCode = null;
+        if ($search && $searchTypeCode) {
+            $searchTypes = Order::getSearchTypes();
+            if (!array_key_exists($searchTypeCode, $searchTypes)) {
+                throw new HttpException(400, 'Invalid search type.');
             }
+            $query = Order::getSearchOrdersQuery($searchTypeCode, $search, $statusCode);
+        } else {
+            if (!is_null($mode)) {
+                $modeCode = Order::getModeCodeByName($mode);
+                if (is_null($modeCode)) {
+                    throw new HttpException(400, 'Invalid mode.');
+                }
+            }
+            $services = Order::getServices($statusCode, $modeCode);
+            if (!is_null($serviceId)) {
+                if (!array_key_exists($serviceId, $services)) {
+                    throw new HttpException(400, 'Invalid service.');
+                }
+            }
+            $query = Order::getFilterOrdersQuery($statusCode, $modeCode, $serviceId);
         }
 
-        $query = Order::getOrdersQuery($statusCode, $modeCode, $serviceId);
         $totalOrdersNumber = $query->count();
         $pagination = new Pagination([
             'pageSizeLimit' => [1, self::ORDERS_PER_PAGE],
@@ -56,6 +65,9 @@ class OrderController extends Controller
             'selected_mode' => $mode,
             'services' => Order::getServices($statusCode, $modeCode),
             'selected_service_id' => $serviceId,
+            'search_types' => Order::getSearchTypes(),
+            'selected_search_type' => $searchTypeCode,
+            'search' => $search,
             'pagination' => $pagination,
             'orders_per_page' => self::ORDERS_PER_PAGE,
             'total_orders_number' => $totalOrdersNumber,
