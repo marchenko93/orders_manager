@@ -47,7 +47,7 @@ $config = [
             'showScriptName' => false,
             'enableStrictParsing' => false,
             'rules' => [
-                '/<slug:pending|inprogress|completed|canceled|error>' => 'listing/order/list',
+                '/<status:pending|inprogress|completed|canceled|error>' => 'listing/order/list',
                 '/' => 'listing/order/list',
             ],
         ],

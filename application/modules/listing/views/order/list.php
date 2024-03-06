@@ -22,14 +22,14 @@ use yii\widgets\LinkPager;
 </nav>
 <div class="container-fluid">
     <ul class="nav nav-tabs p-b">
-        <li <?php if (!$current_slug): ?>class="active"<?php endif; ?>>
+        <li <?php if (!$selected_status): ?>class="active"<?php endif; ?>>
             <a href="<?= Url::toRoute(['/listing/order/list']) ?>">
                 All orders
             </a>
         </li>
         <?php foreach ($statuses as $status): ?>
-            <li <?php if ($current_slug === $status['slug']): ?>class="active"<?php endif; ?>>
-                <a href="<?= Url::toRoute(['/listing/order/list', 'slug' => $status['slug']]) ?>">
+            <li <?php if ($selected_status === $status['name']): ?>class="active"<?php endif; ?>>
+                <a href="<?= Url::toRoute(['/listing/order/list', 'status' => $status['name']]) ?>">
                     <?= $status['title'] ?>
                 </a>
             </li>
@@ -84,9 +84,18 @@ use yii\widgets\LinkPager;
                         <span class="caret"></span>
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-                        <li class="active"><a href="">All</a></li>
-                        <li><a href="">Manual</a></li>
-                        <li><a href="">Auto</a></li>
+                        <li <?php if (!$selected_mode): ?>class="active"<?php endif; ?>>
+                            <a href="<?= Url::current(['mode' => null]) ?>">
+                                All
+                            </a>
+                        </li>
+                        <?php foreach ($modes as $mode): ?>
+                            <li <?php if ($selected_mode === $mode['name']): ?>class="active"<?php endif; ?>>
+                                <a href="<?= Url::current(['mode' => $mode['name']]) ?>">
+                                    <?= $mode['title'] ?>
+                                </a>
+                            </li>
+                        <?php endforeach; ?>
                     </ul>
                 </div>
             </th>

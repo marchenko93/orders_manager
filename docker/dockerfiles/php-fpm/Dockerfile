@@ -1,4 +1,4 @@
-FROM php:8.2-fpm
+FROM php:8.3-fpm
 WORKDIR /usr/src/app
 RUN curl -sSLf \
     -o /usr/local/bin/install-php-extensions \
