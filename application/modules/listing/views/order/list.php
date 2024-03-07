@@ -116,15 +116,15 @@ use yii\widgets\LinkPager;
         <?php foreach ($orders as $order): ?>
             <tr>
                 <td><?= $order['id'] ?></td>
-                <td><?= $order['user'] ?></td>
+                <td><?= $order['user']['first_name'] . ' ' . $order['user']['last_name'] ?></td>
                 <td class="link"><?= $order['link'] ?></td>
                 <td><?= $order['quantity'] ?></td>
                 <td class="service">
-                    <span class="label-id"><?= $services[$order['service_id']]['orders_number'] ?></span> <?= $order['service_name'] ?>
+                    <span class="label-id"><?= $services[$order['service_id']]['orders_number'] ?></span> <?= $order['service']['name'] ?>
                 </td>
                 <td><?= $statuses[$order['status']]['title'] ?></td>
                 <td><?= $modes[$order['mode']]['title'] ?></td>
-                <td><span class="nowrap"><?= $order['created_date'] ?></span><span class="nowrap"><?= $order['created_time'] ?></span></td>
+                <td><span class="nowrap"><?= date('Y-m-d', $order['created_at']) ?></span><span class="nowrap"><?=  date('H:i:s', $order['created_at']) ?></span></td>
             </tr>
         <?php endforeach; ?>
         </tbody>
@@ -136,7 +136,7 @@ use yii\widgets\LinkPager;
             </nav>
         </div>
         <div class="col-sm-4 pagination-counters">
-            1 to <?= $orders_per_page ?> of <?= $total_orders_number ?>
+            <?= $pagination->getOffset() + 1 ?> to <?= $pagination->getOffset() + count($orders) ?> of <?= $total_orders_number ?>
         </div>
     </div>
 </div>

@@ -12,7 +12,7 @@ class OrderController extends Controller
 {
     private const ORDERS_PER_PAGE = 100;
 
-    public function actionList(string $status = '')
+    public function actionList(string $status = ''): string
     {
         $statusCode = null;
         if ($status) {
