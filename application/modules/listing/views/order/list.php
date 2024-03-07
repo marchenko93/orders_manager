@@ -120,7 +120,7 @@ use yii\widgets\LinkPager;
                 <td class="link"><?= $order['link'] ?></td>
                 <td><?= $order['quantity'] ?></td>
                 <td class="service">
-                    <span class="label-id"><?= $order['service_id'] ?></span> <?= $order['service_name'] ?>
+                    <span class="label-id"><?= $services[$order['service_id']]['orders_number'] ?></span> <?= $order['service_name'] ?>
                 </td>
                 <td><?= $statuses[$order['status']]['title'] ?></td>
                 <td><?= $modes[$order['mode']]['title'] ?></td>

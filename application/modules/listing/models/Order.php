@@ -29,9 +29,9 @@ class Order extends ActiveRecord
     protected const SEARCH_TYPE_LINK = 2;
     protected const SEARCH_TYPE_USERNAME = 3;
     protected const SEARCH_TYPES = [
-        self::SEARCH_TYPE_ORDER_ID => ['name' => 'o.id', 'title' => 'Order ID'],
-        self::SEARCH_TYPE_LINK => ['name' => 'o.link', 'title' => 'Link'],
-        self::SEARCH_TYPE_USERNAME => ['name' => 'CONCAT(u.first_name, " ", u.last_name)', 'title' => 'Username'],
+        self::SEARCH_TYPE_ORDER_ID => ['select_expression' => 'o.id', 'title' => 'Order ID'],
+        self::SEARCH_TYPE_LINK => ['select_expression' => 'o.link', 'title' => 'Link'],
+        self::SEARCH_TYPE_USERNAME => ['select_expression' => 'CONCAT(u.first_name, " ", u.last_name)', 'title' => 'Username'],
     ];
 
     public static function tableName()
@@ -74,37 +74,14 @@ class Order extends ActiveRecord
         return static::SEARCH_TYPES;
     }
 
-    public static function getServices(?int $statusCode = null, ?int $modeCode = null): array
-    {
-        $query = new Query();
-        $joinCondition = 's.id = o.service_id';
-        $joinConditionParams = [];
-        if (!is_null($statusCode)) {
-            $joinCondition .= ' AND o.status = :status';
-            $joinConditionParams[':status'] = $statusCode;
-        }
-        if (!is_null($modeCode)) {
-            $joinCondition .= ' AND o.mode = :mode';
-            $joinConditionParams[':mode'] = $modeCode;
-        }
-
-        $query->select([
-            's.id',
-            's.name',
-            'COUNT(o.id) orders_number',
-        ])
-            ->from('services s')
-            ->leftJoin('orders o', $joinCondition, $joinConditionParams)
-            ->groupBy('s.id, s.name')
-            ->orderBy(['orders_number' => SORT_DESC])
-        ;
-
-        return $query->indexBy('id')->all();
-    }
-
-    public static function getOrdersQuery(?int $statusCode = null)
-    {
-        $query = new Query();
+    public static function getOrdersQuery(
+        ?int $statusCode = null,
+        ?int $modeCode = null,
+        ?int $serviceId = null,
+        ?int $searchTypeCode = null,
+        ?string $search = null
+    ) {
+        $query = static::createQuery();
         $query->select([
             'o.id',
             'user' => 'CONCAT(u.first_name, " ", u.last_name)',
@@ -117,36 +94,80 @@ class Order extends ActiveRecord
             'created_date' => 'FROM_UNIXTIME(o.created_at, "%Y-%m-%d")',
             'created_time' => 'FROM_UNIXTIME(o.created_at, "%h:%i:%s")',
         ])
-            ->from('orders o')
-            ->innerJoin('users u', 'o.user_id = u.id')
-            ->innerJoin('services s', 'o.service_id = s.id')
             ->orderBy(['o.id' => SORT_DESC])
         ;
-        if (!is_null($statusCode)) {
-            $query->andWhere('o.status=:status', [':status' => $statusCode]);
-        }
+        static::addFiltersToQuery($query, $statusCode, $modeCode, $searchTypeCode, $search, $serviceId);
+
         return $query;
     }
 
-    public static function getFilterOrdersQuery(?int $statusCode = null, ?int $modeCode = null, ?int $serviceId = null)
+    public static function getServices(
+        ?int $statusCode = null,
+        ?int $modeCode = null,
+        ?int $searchTypeCode = null,
+        ?string $search = null
+    ) {
+        $query = static::createQuery();
+        $query->select([
+            's.id',
+            's.name',
+            'orders_number' => 'COUNT(o.id)'
+        ])
+            ->groupBy('s.id')
+            ->orderBy(['orders_number' => SORT_DESC])
+        ;
+        static::addFiltersToQuery($query, $statusCode, $modeCode, $searchTypeCode, $search);
+
+        $servicesWithOrders = $query->indexBy('id')->all();
+        static::addServicesWithoutOrders($servicesWithOrders);
+
+        return $servicesWithOrders;
+    }
+
+    protected static function createQuery(): Query
     {
-        $query = static::getOrdersQuery($statusCode);
+        return (new Query())
+            ->from('orders o')
+            ->innerJoin('users u', 'o.user_id = u.id')
+            ->innerJoin('services s', 'o.service_id = s.id')
+        ;
+    }
+
+    protected static function addFiltersToQuery(
+        Query $query,
+        ?int $statusCode = null,
+        ?int $modeCode = null,
+        ?int $searchTypeCode = null,
+        ?string $search = null,
+        ?int $serviceId = null
+    ): void {
+        if (!is_null($statusCode)) {
+            $query->andWhere('o.status=:status', [':status' => $statusCode]);
+        }
         if (!is_null($modeCode)) {
             $query->andWhere('o.mode=:mode', [':mode' => $modeCode]);
         }
         if (!is_null($serviceId)) {
             $query->andWhere('s.id=:id', [':id' => $serviceId]);
         }
-
-        return $query;
+        if (!is_null($searchTypeCode) && $search) {
+            $selectExpression = static::SEARCH_TYPES[$searchTypeCode]['select_expression'];
+            $operation = static::SEARCH_TYPE_ORDER_ID == $searchTypeCode ? '=' : 'LIKE';
+            $query->andWhere([$operation, $selectExpression, $search]);
+        }
     }
 
-    public static function getSearchOrdersQuery(int $searchTypeCode, string $search, ?int $statusCode = null)
+    private static function addServicesWithoutOrders(array &$servicesWithOrders)
     {
-        $query = static::getOrdersQuery($statusCode);
-        $searchType = static::SEARCH_TYPES[$searchTypeCode]['name'];
-        $operation = static::SEARCH_TYPE_ORDER_ID == $searchTypeCode ? '=' : 'LIKE';
-        $query->andWhere([$operation, $searchType, $search]);
-        return $query;
+        $allServices = Service::find()->indexBy('id')->all();
+        foreach ($allServices as $id => $service) {
+            if (!array_key_exists($id, $servicesWithOrders)) {
+                $servicesWithOrders[$id] = [
+                    'id' => $id,
+                    'name' => $service['name'],
+                    'orders_number' => 0,
+                ];
+            }
+        }
     }
 }

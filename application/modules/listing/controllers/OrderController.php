@@ -5,8 +5,8 @@ namespace app\modules\listing\controllers;
 use app\modules\listing\models\Order;
 use Yii;
 use yii\data\Pagination;
+use yii\web\BadRequestHttpException;
 use yii\web\Controller;
-use yii\web\HttpException;
 
 class OrderController extends Controller
 {
@@ -18,37 +18,38 @@ class OrderController extends Controller
         if ($status) {
             $statusCode = Order::getStatusCodeByName($status);
             if (is_null($statusCode)) {
-                throw new HttpException(400, 'Invalid status.');
+                throw new BadRequestHttpException('Invalid status.');
             }
         }
 
-        $search = Yii::$app->request->get('search');
-        $mode = Yii::$app->request->get('mode');
-        $serviceId = Yii::$app->request->get('service_id');
-        $searchTypeCode = Yii::$app->request->get('search-type');
+        $request = Yii::$app->request;
         $modeCode = null;
-        if ($search && $searchTypeCode) {
+        $mode = $request->get('mode');
+        if (!is_null($mode)) {
+            $modeCode = Order::getModeCodeByName($mode);
+            if (is_null($modeCode)) {
+                throw new BadRequestHttpException('Invalid mode.');
+            }
+        }
+
+        $search = $request->get('search');
+        $searchTypeCode = $request->get('search-type');
+        if ($searchTypeCode) {
             $searchTypes = Order::getSearchTypes();
             if (!array_key_exists($searchTypeCode, $searchTypes)) {
-                throw new HttpException(400, 'Invalid search type.');
+                throw new BadRequestHttpException('Invalid search type.');
             }
-            $query = Order::getSearchOrdersQuery($searchTypeCode, $search, $statusCode);
-        } else {
-            if (!is_null($mode)) {
-                $modeCode = Order::getModeCodeByName($mode);
-                if (is_null($modeCode)) {
-                    throw new HttpException(400, 'Invalid mode.');
-                }
-            }
-            $services = Order::getServices($statusCode, $modeCode);
-            if (!is_null($serviceId)) {
-                if (!array_key_exists($serviceId, $services)) {
-                    throw new HttpException(400, 'Invalid service.');
-                }
-            }
-            $query = Order::getFilterOrdersQuery($statusCode, $modeCode, $serviceId);
         }
 
+        $serviceId = $request->get('service_id');
+        $services = Order::getServices($statusCode, $modeCode, $searchTypeCode, $search);
+        if (!is_null($serviceId)) {
+            if (!array_key_exists($serviceId, $services)) {
+                throw new BadRequestHttpException('Invalid service.');
+            }
+        }
+
+        $query = Order::getOrdersQuery($statusCode, $modeCode, $serviceId, $searchTypeCode, $search);
         $totalOrdersNumber = $query->count();
         $pagination = new Pagination([
             'pageSizeLimit' => [1, self::ORDERS_PER_PAGE],
@@ -63,7 +64,7 @@ class OrderController extends Controller
             'selected_status' => $status,
             'modes' => Order::getModes(),
             'selected_mode' => $mode,
-            'services' => Order::getServices($statusCode, $modeCode),
+            'services' => $services,
             'selected_service_id' => $serviceId,
             'search_types' => Order::getSearchTypes(),
             'selected_search_type' => $searchTypeCode,
