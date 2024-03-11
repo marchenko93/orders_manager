@@ -4,6 +4,19 @@ use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\widgets\LinkPager;
 
+/* @var $statuses array */
+/* @var $search_types array */
+/* @var $modes array */
+/* @var $services array */
+/* @var $selected_status string */
+/* @var $search string|null */
+/* @var $selected_search_type int|null */
+/* @var $selected_service_id int|null */
+/* @var $selected_mode string|null */
+/* @var $total_orders_number int */
+/* @var $orders array */
+/* @var $pagination yii\data\Pagination */
+
 $this->title = Module::t('list', 'Orders');
 ?>
 
@@ -118,12 +131,12 @@ $this->title = Module::t('list', 'Orders');
         <tbody>
         <?php foreach ($orders as $order): ?>
             <tr>
-                <td><?= $order['id'] ?></td>
-                <td><?= $order['user']['first_name'] . ' ' . $order['user']['last_name'] ?></td>
-                <td class="link"><?= $order['link'] ?></td>
-                <td><?= $order['quantity'] ?></td>
+                <td><?= (int) $order['id'] ?></td>
+                <td><?= Html::encode($order['user']['first_name']) . ' ' . Html::encode($order['user']['last_name']) ?></td>
+                <td class="link"><?= Html::encode($order['link']) ?></td>
+                <td><?= (int) $order['quantity'] ?></td>
                 <td class="service">
-                    <span class="label-id"><?= $services[$order['service_id']]['orders_number'] ?></span> <?= $order['service']['name'] ?>
+                    <span class="label-id"><?= (int) $services[$order['service_id']]['orders_number'] ?></span> <?= Html::encode($order['service']['name']) ?>
                 </td>
                 <td><?= $statuses[$order['status']]['title'] ?></td>
                 <td><?= $modes[$order['mode']]['title'] ?></td>
