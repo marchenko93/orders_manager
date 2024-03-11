@@ -1,8 +1,8 @@
 <?php
 
-namespace app\modules\listing\controllers;
+namespace app\modules\orders_list\controllers;
 
-use app\modules\listing\models\OrdersList;
+use app\modules\orders_list\models\OrdersList;
 use Yii;
 use yii\data\Pagination;
 use yii\web\BadRequestHttpException;
@@ -37,7 +37,7 @@ class OrderController extends Controller
         $searchTypeCode = $request->get('search-type');
         if ($searchTypeCode) {
             $searchTypes = $ordersList->getSearchTypes();
-            if (!array_key_exists($searchTypeCode, $searchTypes)) {
+            if (!$ordersList->isSearchTypeValid($searchTypeCode)) {
                 throw new BadRequestHttpException('Invalid search type.');
             }
         }
@@ -45,7 +45,7 @@ class OrderController extends Controller
         $serviceId = $request->get('service_id');
         $services = $ordersList->getServices($statusCode, $modeCode, $searchTypeCode, $search);
         if (!is_null($serviceId)) {
-            if (!array_key_exists($serviceId, $services)) {
+            if (!$ordersList->isServiceValid($serviceId, $services)) {
                 throw new BadRequestHttpException('Invalid service.');
             }
         }

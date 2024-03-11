@@ -1,8 +1,8 @@
 <?php
 
-namespace app\modules\listing\models;
+namespace app\modules\orders_list\models;
 
-use app\modules\listing\Module;
+use app\modules\orders_list\Module;
 use yii\db\Query;
 
 class OrdersList
@@ -14,7 +14,6 @@ class OrdersList
     protected array $statuses;
     protected array $modes;
     protected array $searchTypes;
-    protected array $services = [];
 
     public function __construct($config = [])
     {
@@ -79,6 +78,16 @@ class OrdersList
     public function getSearchTypes(): array
     {
         return $this->searchTypes;
+    }
+
+    public function isSearchTypeValid($searchTypeCode): bool
+    {
+        return array_key_exists($searchTypeCode, $this->searchTypes);
+    }
+
+    public function isServiceValid($serviceId, array $services): bool
+    {
+        return array_key_exists($serviceId, $services);
     }
 
     public function getStatusCodeByName(string $name): ?int

@@ -47,18 +47,19 @@ $config = [
             'showScriptName' => false,
             'enableStrictParsing' => false,
             'rules' => [
-                '/<status:pending|inprogress|completed|canceled|error>' => 'listing/order/list',
-                '/' => 'listing/order/list',
+                'orders/<status:pending|inprogress|completed|canceled|error>' => 'orders_list/order/list',
+                'orders/' => 'orders_list/order/list',
             ],
         ],
     ],
     'params' => $params,
     'modules' => [
-        'listing' => [
-            'class' => 'app\modules\listing\Module'
+        'orders_list' => [
+            'class' => 'app\modules\orders_list\Module'
         ],
     ],
     'language' => $_ENV['APP_LANGUAGE'],
+    'defaultRoute' => 'orders_list/order/list',
 ];
 
 if (YII_ENV_DEV) {

@@ -1,5 +1,5 @@
 <?php
-use app\modules\listing\assets\ListingAsset;
+use app\modules\orders_list\assets\ListingAsset;
 
 ListingAsset::register($this);
 ?>

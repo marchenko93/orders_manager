@@ -1,12 +1,12 @@
 <?php
 
-namespace app\modules\listing\assets;
+namespace app\modules\orders_list\assets;
 
 use yii\web\AssetBundle;
 
 class ListingAsset extends AssetBundle
 {
-    public $sourcePath = '@app/modules/listing/resources';
+    public $sourcePath = '@app/modules/orders_list/resources';
     public $css = [
         'css/bootstrap.min.css',
         'css/custom.css',
