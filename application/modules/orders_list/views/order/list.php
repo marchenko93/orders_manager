@@ -17,6 +17,7 @@ use yii\widgets\LinkPager;
 /* @var $services_total_orders_number int */
 /* @var $orders array */
 /* @var $pagination yii\data\Pagination */
+/* @var $orders_per_page int */
 
 $this->title = Module::t('list', 'Orders');
 ?>
@@ -146,14 +147,16 @@ $this->title = Module::t('list', 'Orders');
         <?php endforeach; ?>
         </tbody>
     </table>
-    <div class="row">
-        <div class="col-sm-8">
-            <nav>
-                <?= LinkPager::widget(['pagination' => $pagination]) ?>
-            </nav>
+    <?php if ($total_orders_number > $orders_per_page): ?>
+        <div class="row">
+            <div class="col-sm-8">
+                <nav>
+                    <?= LinkPager::widget(['pagination' => $pagination]) ?>
+                </nav>
+            </div>
+            <div class="col-sm-4 pagination-counters">
+                <?= $pagination->getOffset() + 1 ?> <?= Module::t('list', 'to') ?> <?= $pagination->getOffset() + count($orders) ?> <?= Module::t('list', 'of') ?> <?= $total_orders_number ?>
+            </div>
         </div>
-        <div class="col-sm-4 pagination-counters">
-            <?= $pagination->getOffset() + 1 ?> <?= Module::t('list', 'to') ?> <?= $pagination->getOffset() + count($orders) ?> <?= Module::t('list', 'of') ?> <?= $total_orders_number ?>
-        </div>
-    </div>
+    <?php endif; ?>
 </div>
