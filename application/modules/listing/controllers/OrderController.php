@@ -2,7 +2,7 @@
 
 namespace app\modules\listing\controllers;
 
-use app\modules\listing\models\ListingOrder;
+use app\modules\listing\models\OrdersList;
 use Yii;
 use yii\data\Pagination;
 use yii\web\BadRequestHttpException;
@@ -14,10 +14,10 @@ class OrderController extends Controller
 
     public function actionList(string $status = ''): string
     {
-        $listingOrder = new ListingOrder();
+        $ordersList = new OrdersList();
         $statusCode = null;
         if ($status) {
-            $statusCode = $listingOrder->getStatusCodeByName($status);
+            $statusCode = $ordersList->getStatusCodeByName($status);
             if (is_null($statusCode)) {
                 throw new BadRequestHttpException('Invalid status.');
             }
@@ -27,7 +27,7 @@ class OrderController extends Controller
         $modeCode = null;
         $mode = $request->get('mode');
         if (!is_null($mode)) {
-            $modeCode = $listingOrder->getModeCodeByName($mode);
+            $modeCode = $ordersList->getModeCodeByName($mode);
             if (is_null($modeCode)) {
                 throw new BadRequestHttpException('Invalid mode.');
             }
@@ -36,43 +36,44 @@ class OrderController extends Controller
         $search = $request->get('search');
         $searchTypeCode = $request->get('search-type');
         if ($searchTypeCode) {
-            $searchTypes = $listingOrder->getSearchTypes();
+            $searchTypes = $ordersList->getSearchTypes();
             if (!array_key_exists($searchTypeCode, $searchTypes)) {
                 throw new BadRequestHttpException('Invalid search type.');
             }
         }
 
         $serviceId = $request->get('service_id');
-        $services = $listingOrder->getServices($statusCode, $modeCode, $searchTypeCode, $search);
+        $services = $ordersList->getServices($statusCode, $modeCode, $searchTypeCode, $search);
         if (!is_null($serviceId)) {
             if (!array_key_exists($serviceId, $services)) {
                 throw new BadRequestHttpException('Invalid service.');
             }
         }
 
-        $query = $listingOrder->getOrdersQuery($statusCode, $modeCode, $serviceId, $searchTypeCode, $search);
-        $totalOrdersNumber = $query->count();
+        $ordersQuery = $ordersList->getOrdersQuery($statusCode, $modeCode, $serviceId, $searchTypeCode, $search);
+        $totalOrdersNumber = $ordersQuery->count();
         $pagination = new Pagination([
             'pageSizeLimit' => [1, self::ORDERS_PER_PAGE],
             'defaultPageSize' => self::ORDERS_PER_PAGE,
             'totalCount' => $totalOrdersNumber,
         ]);
-        $query->offset($pagination->offset)->limit($pagination->limit);
+        $ordersQuery->offset($pagination->offset)->limit($pagination->limit);
 
         return $this->render('list', [
-            'orders' => $query->all(),
-            'statuses' => $listingOrder->getStatuses(),
+            'orders' => $ordersQuery->all(),
+            'statuses' => $ordersList->getStatuses(),
             'selected_status' => $status,
-            'modes' => $listingOrder->getModes(),
+            'modes' => $ordersList->getModes(),
             'selected_mode' => $mode,
             'services' => $services,
             'selected_service_id' => $serviceId,
-            'search_types' => $listingOrder->getSearchTypes(),
+            'search_types' => $ordersList->getSearchTypes(),
             'selected_search_type' => $searchTypeCode,
             'search' => $search,
             'pagination' => $pagination,
             'orders_per_page' => static::ORDERS_PER_PAGE,
             'total_orders_number' => $totalOrdersNumber,
+            'services_total_orders_number' => $ordersList->getServicesTotalOrdersNumber($services),
         ]);
     }
 }

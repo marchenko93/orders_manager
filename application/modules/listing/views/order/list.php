@@ -14,6 +14,7 @@ use yii\widgets\LinkPager;
 /* @var $selected_service_id int|null */
 /* @var $selected_mode string|null */
 /* @var $total_orders_number int */
+/* @var $services_total_orders_number int */
 /* @var $orders array */
 /* @var $pagination yii\data\Pagination */
 
@@ -45,8 +46,8 @@ $this->title = Module::t('list', 'Orders');
             </a>
         </li>
         <?php foreach ($statuses as $status): ?>
-            <li <?php if ($selected_status === $status['name']): ?>class="active"<?php endif; ?>>
-                <a href="<?= Url::toRoute(['/listing/order/list', 'status' => $status['name']]) ?>">
+            <li <?php if ($selected_status === $status['status']): ?>class="active"<?php endif; ?>>
+                <a href="<?= Url::toRoute(['/listing/order/list', 'status' => $status['status']]) ?>">
                     <?= $status['title'] ?>
                 </a>
             </li>
@@ -84,7 +85,7 @@ $this->title = Module::t('list', 'Orders');
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
                         <li <?php if (!$selected_service_id): ?>class="active"<?php endif; ?>>
                             <a href="<?= Url::current(['service_id' => null]) ?>">
-                                <?= Module::t('list', 'All') ?> (<?= $total_orders_number ?>)
+                                <?= Module::t('list', 'All') ?> (<?= $services_total_orders_number ?>)
                             </a>
                         </li>
                         <?php foreach ($services as $service): ?>
@@ -116,8 +117,8 @@ $this->title = Module::t('list', 'Orders');
                             </a>
                         </li>
                         <?php foreach ($modes as $mode): ?>
-                            <li <?php if ($selected_mode === $mode['name']): ?>class="active"<?php endif; ?>>
-                                <a href="<?= Url::current(['mode' => $mode['name']]) ?>">
+                            <li <?php if ($selected_mode === $mode['mode']): ?>class="active"<?php endif; ?>>
+                                <a href="<?= Url::current(['mode' => $mode['mode']]) ?>">
                                     <?= $mode['title'] ?>
                                 </a>
                             </li>
@@ -132,11 +133,11 @@ $this->title = Module::t('list', 'Orders');
         <?php foreach ($orders as $order): ?>
             <tr>
                 <td><?= (int) $order['id'] ?></td>
-                <td><?= Html::encode($order['user']['first_name']) . ' ' . Html::encode($order['user']['last_name']) ?></td>
+                <td><?= Html::encode($order['username']) ?></td>
                 <td class="link"><?= Html::encode($order['link']) ?></td>
                 <td><?= (int) $order['quantity'] ?></td>
                 <td class="service">
-                    <span class="label-id"><?= (int) $services[$order['service_id']]['orders_number'] ?></span> <?= Html::encode($order['service']['name']) ?>
+                    <span class="label-id"><?= (int) $services[$order['service_id']]['orders_number'] ?></span> <?= Html::encode($services[$order['service_id']]['name']) ?>
                 </td>
                 <td><?= $statuses[$order['status']]['title'] ?></td>
                 <td><?= $modes[$order['mode']]['title'] ?></td>
