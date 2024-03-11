@@ -1,7 +1,10 @@
 <?php
+use app\modules\listing\Module;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\widgets\LinkPager;
+
+$this->title = Module::t('list', 'Orders');
 ?>
 
 <nav class="navbar navbar-fixed-top navbar-default">
@@ -16,7 +19,7 @@ use yii\widgets\LinkPager;
         </div>
         <div class="collapse navbar-collapse" id="bs-navbar-collapse">
             <ul class="nav navbar-nav">
-                <li class="active"><a href="<?= Url::toRoute(['/listing/order/list']) ?>">Orders</a></li>
+                <li class="active"><a href="<?= Url::toRoute(['/listing/order/list']) ?>"><?= Module::t('list', 'Orders') ?></a></li>
             </ul>
         </div>
     </div>
@@ -25,7 +28,7 @@ use yii\widgets\LinkPager;
     <ul class="nav nav-tabs p-b">
         <li <?php if (!$selected_status): ?>class="active"<?php endif; ?>>
             <a href="<?= Url::toRoute(['/listing/order/list']) ?>">
-                All orders
+                <?= Module::t('list', 'All orders') ?>
             </a>
         </li>
         <?php foreach ($statuses as $status): ?>
@@ -38,7 +41,7 @@ use yii\widgets\LinkPager;
         <li class="pull-right custom-search">
             <form class="form-inline" action="<?= Url::current() ?>" method="get">
                 <div class="input-group">
-                    <input type="text" name="search" class="form-control" value="<?= Html::encode($search) ?>" placeholder="Search orders">
+                    <input type="text" name="search" class="form-control" value="<?= Html::encode($search) ?>" placeholder="<?= Module::t('list', 'Search orders') ?>">
                     <span class="input-group-btn search-select-wrap">
 
                     <select class="form-control search-select" name="search-type">
@@ -55,20 +58,20 @@ use yii\widgets\LinkPager;
     <table class="table order-table">
         <thead>
         <tr>
-            <th>ID</th>
-            <th>User</th>
-            <th>Link</th>
-            <th>Quantity</th>
+            <th><?= Module::t('list', 'ID') ?></th>
+            <th><?= Module::t('list', 'User') ?></th>
+            <th><?= Module::t('list', 'Link') ?></th>
+            <th><?= Module::t('list', 'Quantity') ?></th>
             <th class="dropdown-th">
                 <div class="dropdown">
                     <button class="btn btn-th btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                        Service
+                        <?= Module::t('list', 'Service') ?>
                         <span class="caret"></span>
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
                         <li <?php if (!$selected_service_id): ?>class="active"<?php endif; ?>>
                             <a href="<?= Url::current(['service_id' => null]) ?>">
-                                All (<?= $total_orders_number ?>)
+                                <?= Module::t('list', 'All') ?> (<?= $total_orders_number ?>)
                             </a>
                         </li>
                         <?php foreach ($services as $service): ?>
@@ -86,17 +89,17 @@ use yii\widgets\LinkPager;
                     </ul>
                 </div>
             </th>
-            <th>Status</th>
+            <th><?= Module::t('list', 'Status') ?></th>
             <th class="dropdown-th">
                 <div class="dropdown">
                     <button class="btn btn-th btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                        Mode
+                        <?= Module::t('list', 'Mode') ?>
                         <span class="caret"></span>
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
                         <li <?php if (!$selected_mode): ?>class="active"<?php endif; ?>>
                             <a href="<?= Url::current(['mode' => null]) ?>">
-                                All
+                                <?= Module::t('list', 'All') ?>
                             </a>
                         </li>
                         <?php foreach ($modes as $mode): ?>
@@ -109,7 +112,7 @@ use yii\widgets\LinkPager;
                     </ul>
                 </div>
             </th>
-            <th>Created</th>
+            <th><?= Module::t('list', 'Created') ?></th>
         </tr>
         </thead>
         <tbody>
@@ -136,7 +139,7 @@ use yii\widgets\LinkPager;
             </nav>
         </div>
         <div class="col-sm-4 pagination-counters">
-            <?= $pagination->getOffset() + 1 ?> to <?= $pagination->getOffset() + count($orders) ?> of <?= $total_orders_number ?>
+            <?= $pagination->getOffset() + 1 ?> <?= Module::t('list', 'to') ?> <?= $pagination->getOffset() + count($orders) ?> <?= Module::t('list', 'of') ?> <?= $total_orders_number ?>
         </div>
     </div>
 </div>
