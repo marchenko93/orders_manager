@@ -18,9 +18,6 @@ application/vendor
 # composer itself is not needed
 application/composer.phar
 
-# composer lock
-application/composer.lock
-
 # Mac DS_Store Files
 .DS_Store
 

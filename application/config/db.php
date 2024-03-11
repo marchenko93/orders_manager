@@ -2,9 +2,9 @@
 
 return [
     'class' => 'yii\db\Connection',
-    'dsn' => 'mysql:host=db;dbname=orders_manager',
-    'username' => 'sergey',
-    'password' => 'ks2905',
+    'dsn' => $_ENV['DATABASE_DSN'],
+    'username' => $_ENV['DATABASE_USERNAME'],
+    'password' => $_ENV['DATABASE_PASSWORD'],
     'charset' => 'utf8',
 
     // Schema cache options (for production environment)

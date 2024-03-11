@@ -58,6 +58,7 @@ $config = [
             'class' => 'app\modules\listing\Module'
         ],
     ],
+    'language' => $_ENV['APP_LANGUAGE'],
 ];
 
 if (YII_ENV_DEV) {
