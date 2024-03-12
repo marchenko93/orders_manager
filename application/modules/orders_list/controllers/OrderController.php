@@ -10,8 +10,6 @@ use yii\web\Controller;
 
 class OrderController extends Controller
 {
-    protected const ORDERS_PER_PAGE = 100;
-
     public function actionList(string $status = ''): string
     {
         $ordersList = new OrdersList();
@@ -51,10 +49,15 @@ class OrderController extends Controller
         }
 
         $ordersQuery = $ordersList->getOrdersQuery($statusCode, $modeCode, $serviceId, $searchTypeCode, $search);
+
+        if ($request->get('export')) {
+            $ordersList->exportQueryResultToCsv($ordersQuery);
+        }
+
         $totalOrdersNumber = $ordersQuery->count();
         $pagination = new Pagination([
-            'pageSizeLimit' => [1, self::ORDERS_PER_PAGE],
-            'defaultPageSize' => self::ORDERS_PER_PAGE,
+            'pageSizeLimit' => [1, OrdersList::ORDERS_PER_PAGE],
+            'defaultPageSize' => OrdersList::ORDERS_PER_PAGE,
             'totalCount' => $totalOrdersNumber,
         ]);
         $ordersQuery->offset($pagination->offset)->limit($pagination->limit);
@@ -71,7 +74,7 @@ class OrderController extends Controller
             'selected_search_type' => $searchTypeCode,
             'search' => $search,
             'pagination' => $pagination,
-            'orders_per_page' => static::ORDERS_PER_PAGE,
+            'orders_per_page' => OrdersList::ORDERS_PER_PAGE,
             'total_orders_number' => $totalOrdersNumber,
             'services_total_orders_number' => $ordersList->getServicesTotalOrdersNumber($services),
         ]);

@@ -3,10 +3,14 @@
 namespace app\modules\orders_list\models;
 
 use app\modules\orders_list\Module;
+use yii\data\ActiveDataProvider;
 use yii\db\Query;
+use yii\db\Expression;
+use yii2tech\csvgrid\CsvGrid;
 
 class OrdersList
 {
+    public const ORDERS_PER_PAGE = 100;
     protected const int SEARCH_TYPE_ORDER_ID = 1;
     protected const int SEARCH_TYPE_LINK = 2;
     protected const int SEARCH_TYPE_USERNAME = 3;
@@ -14,6 +18,7 @@ class OrdersList
     protected array $statuses;
     protected array $modes;
     protected array $searchTypes;
+    protected array $columns;
 
     public function __construct($config = [])
     {
@@ -61,6 +66,40 @@ class OrdersList
             self::SEARCH_TYPE_USERNAME => [
                 'select_expression' => 'CONCAT(u.first_name, " ", u.last_name)',
                 'title' => Module::t('list', 'Username')
+            ],
+        ];
+        $this->columns = [
+            [
+                'attribute' => 'id',
+                'label' => Module::t('list', 'ID')
+            ],
+            [
+                'attribute' => 'username',
+                'label' => Module::t('list', 'User')
+            ],
+            [
+                'attribute' => 'link',
+                'label' => Module::t('list', 'Link')
+            ],
+            [
+                'attribute' => 'quantity',
+                'label' => Module::t('list', 'Quantity')
+            ],
+            [
+                'attribute' => 'service_name',
+                'label' => Module::t('list', 'Service')
+            ],
+            [
+                'attribute' => 'status',
+                'label' => Module::t('list', 'Status')
+            ],
+            [
+                'attribute' => 'mode',
+                'label' => Module::t('list', 'Mode')
+            ],
+            [
+                'attribute' => 'created_at',
+                'label' => Module::t('list', 'Created')
             ],
         ];
     }
@@ -125,9 +164,9 @@ class OrdersList
                 'o.quantity',
                 'o.service_id',
                 'service_name' => 's.name',
-                'o.status',
-                'o.mode',
-                'created_at' => 'o.created_at',
+                'status' => $this->getStatusExpression(),
+                'mode' => $this->getModeExpression(),
+                'created_at' => 'FROM_UNIXTIME(o.created_at, "%Y-%m-%d %h:%i:%s")',
             ])
             ->from('orders o')
             ->innerJoin('users u', 'o.user_id = u.id')
@@ -179,6 +218,20 @@ class OrdersList
         );
     }
 
+    public function exportQueryResultToCsv(Query $query): void
+    {
+        $exporter = new CsvGrid([
+            'dataProvider' => new ActiveDataProvider([
+                'query' => $query,
+                'pagination' => [
+                    'pageSize' => static::ORDERS_PER_PAGE,
+                ],
+            ]),
+            'columns' => $this->columns,
+        ]);
+        $exporter->export()->send('orders.csv');
+    }
+
     protected function addFiltersToQuery(
         Query $query,
         ?int $statusCode = null,
@@ -201,5 +254,25 @@ class OrdersList
             $operation = static::SEARCH_TYPE_ORDER_ID == $searchTypeCode ? '=' : 'LIKE';
             $query->andWhere([$operation, $selectExpression, $search]);
         }
+    }
+
+    protected function getModeExpression(): Expression
+    {
+        $sqlExpression = 'CASE o.mode ';
+        foreach ($this->modes as $code => $mode) {
+            $sqlExpression .= 'WHEN ' . $code . ' THEN "'. $mode['title'] . '" ';
+        }
+        $sqlExpression .= 'END';
+        return new Expression($sqlExpression);
+    }
+
+    protected function getStatusExpression(): Expression
+    {
+        $sqlExpression = 'CASE o.status ';
+        foreach ($this->statuses as $code => $status) {
+            $sqlExpression .= 'WHEN ' . $code . ' THEN "'. $status['title'] . '" ';
+        }
+        $sqlExpression .= 'END';
+        return new Expression($sqlExpression);
     }
 }

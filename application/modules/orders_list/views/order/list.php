@@ -140,9 +140,10 @@ $this->title = Module::t('list', 'Orders');
                 <td class="service">
                     <span class="label-id"><?= (int) $services[$order['service_id']]['orders_number'] ?></span> <?= Html::encode($services[$order['service_id']]['name']) ?>
                 </td>
-                <td><?= $statuses[$order['status']]['title'] ?></td>
-                <td><?= $modes[$order['mode']]['title'] ?></td>
-                <td><span class="nowrap"><?= date('Y-m-d', $order['created_at']) ?></span><span class="nowrap"><?=  date('H:i:s', $order['created_at']) ?></span></td>
+                <td><?=$order['status'] ?></td>
+                <td><?= Html::encode($order['mode']) ?></td>
+                <?php $createdAt = explode(' ', $order['created_at']); ?>
+                <td><span class="nowrap"><?= $createdAt[0] ?></span><span class="nowrap"><?=  $createdAt[1] ?></span></td>
             </tr>
         <?php endforeach; ?>
         </tbody>
@@ -159,4 +160,6 @@ $this->title = Module::t('list', 'Orders');
             </div>
         </div>
     <?php endif; ?>
+    <br>
+    <a href="<?= Url::current(['export' => 1]) ?>"><?= Module::t('list', 'Save result') ?></a>
 </div>
