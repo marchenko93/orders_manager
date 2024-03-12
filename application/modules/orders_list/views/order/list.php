@@ -75,11 +75,14 @@ $this->title = Module::t('list', 'Orders');
         <thead>
         <tr>
             <?php foreach ($columns as $column): ?>
+                <?php if ('service_orders_number' === $column['attribute']): ?>
+                    <?php continue; ?>
+                <?php endif; ?>
                 <?php if ('service_name' === $column['attribute']): ?>
                     <th class="dropdown-th">
                         <div class="dropdown">
                             <button class="btn btn-th btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                                <?= Module::t('list', 'Service') ?>
+                                <?= $column['label'] ?>
                                 <span class="caret"></span>
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
@@ -107,7 +110,7 @@ $this->title = Module::t('list', 'Orders');
                     <th class="dropdown-th">
                         <div class="dropdown">
                             <button class="btn btn-th btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                                <?= Module::t('list', 'Mode') ?>
+                                <?= $column['label'] ?>
                                 <span class="caret"></span>
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">

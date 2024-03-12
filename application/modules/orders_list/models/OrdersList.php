@@ -97,6 +97,7 @@ class OrdersList extends Model
                 'o.quantity',
                 'o.service_id',
                 'service_name' => 's.name',
+                'service_orders_number' => $this->getServiceExpression(),
                 'status' => $this->getStatusExpression(),
                 'mode' => $this->getModeExpression(),
                 'created_at' => 'FROM_UNIXTIME(o.created_at, "%Y-%m-%d %h:%i:%s")',
@@ -216,6 +217,10 @@ class OrdersList extends Model
                 'label' => Module::t('list', 'Service')
             ],
             [
+                'attribute' => 'service_orders_number',
+                'label' => Module::t('list', 'Service orders number')
+            ],
+            [
                 'attribute' => 'status',
                 'label' => Module::t('list', 'Status')
             ],
@@ -309,6 +314,16 @@ class OrdersList extends Model
         $sqlExpression = 'CASE o.status ';
         foreach ($this->statuses as $code => $status) {
             $sqlExpression .= 'WHEN ' . $code . ' THEN "'. $status['label'] . '" ';
+        }
+        $sqlExpression .= 'END';
+        return new Expression($sqlExpression);
+    }
+
+    private function getServiceExpression(): Expression
+    {
+        $sqlExpression = 'CASE o.service_id ';
+        foreach ($this->services as $serviceId => $service) {
+            $sqlExpression .= 'WHEN ' . $serviceId . ' THEN "'. $service['orders_number'] . '" ';
         }
         $sqlExpression .= 'END';
         return new Expression($sqlExpression);
