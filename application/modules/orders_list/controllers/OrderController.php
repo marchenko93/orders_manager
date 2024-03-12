@@ -5,60 +5,29 @@ namespace app\modules\orders_list\controllers;
 use app\modules\orders_list\models\OrdersList;
 use Yii;
 use yii\data\Pagination;
-use yii\web\BadRequestHttpException;
 use yii\web\Controller;
 
 class OrderController extends Controller
 {
     public function actionList(string $status = ''): string
     {
-        $ordersList = new OrdersList();
-        $statusCode = null;
-        if ($status) {
-            $statusCode = $ordersList->getStatusCodeByName($status);
-            if (is_null($statusCode)) {
-                throw new BadRequestHttpException('Invalid status.');
-            }
-        }
-
         $request = Yii::$app->request;
-        $modeCode = null;
         $mode = $request->get('mode');
-        if (!is_null($mode)) {
-            $modeCode = $ordersList->getModeCodeByName($mode);
-            if (is_null($modeCode)) {
-                throw new BadRequestHttpException('Invalid mode.');
-            }
-        }
-
         $search = $request->get('search');
-        $searchTypeCode = $request->get('search-type');
-        if ($searchTypeCode) {
-            $searchTypes = $ordersList->getSearchTypes();
-            if (!$ordersList->isSearchTypeValid($searchTypeCode)) {
-                throw new BadRequestHttpException('Invalid search type.');
-            }
-        }
-
+        $searchType = $request->get('search-type');
         $serviceId = $request->get('service_id');
-        $services = $ordersList->getServices($statusCode, $modeCode, $searchTypeCode, $search);
-        if (!is_null($serviceId)) {
-            if (!$ordersList->isServiceValid($serviceId, $services)) {
-                throw new BadRequestHttpException('Invalid service.');
-            }
-        }
-
-        $ordersQuery = $ordersList->getOrdersQuery($statusCode, $modeCode, $serviceId, $searchTypeCode, $search);
+        $ordersList = new OrdersList([], $status, $mode, $search, $searchType, $serviceId);
+        $ordersQuery = $ordersList->getOrdersQuery();
 
         if ($request->get('export')) {
             $ordersList->exportQueryResultToCsv($ordersQuery);
         }
 
-        $totalOrdersNumber = $ordersQuery->count();
+        $ordersNumberForSelectedService = $ordersList->getOrdersNumberForSelectedService();
         $pagination = new Pagination([
             'pageSizeLimit' => [1, OrdersList::ORDERS_PER_PAGE],
             'defaultPageSize' => OrdersList::ORDERS_PER_PAGE,
-            'totalCount' => $totalOrdersNumber,
+            'totalCount' => $ordersNumberForSelectedService,
         ]);
         $ordersQuery->offset($pagination->offset)->limit($pagination->limit);
 
@@ -68,15 +37,16 @@ class OrderController extends Controller
             'selected_status' => $status,
             'modes' => $ordersList->getModes(),
             'selected_mode' => $mode,
-            'services' => $services,
+            'services' => $ordersList->getServices(),
             'selected_service_id' => $serviceId,
             'search_types' => $ordersList->getSearchTypes(),
-            'selected_search_type' => $searchTypeCode,
+            'selected_search_type' => $searchType,
             'search' => $search,
             'pagination' => $pagination,
             'orders_per_page' => OrdersList::ORDERS_PER_PAGE,
-            'total_orders_number' => $totalOrdersNumber,
-            'services_total_orders_number' => $ordersList->getServicesTotalOrdersNumber($services),
+            'orders_number_for_selected_service' => $ordersNumberForSelectedService,
+            'orders_number_for_all_services' => $ordersList->getOrdersNumberForAllServices(),
+            'columns' => $ordersList->getColumns(),
         ]);
     }
 }

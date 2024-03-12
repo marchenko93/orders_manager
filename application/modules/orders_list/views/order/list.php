@@ -13,11 +13,12 @@ use yii\widgets\LinkPager;
 /* @var $selected_search_type int|null */
 /* @var $selected_service_id int|null */
 /* @var $selected_mode string|null */
-/* @var $total_orders_number int */
-/* @var $services_total_orders_number int */
+/* @var $orders_number_for_selected_service int */
+/* @var $orders_number_for_all_services int */
 /* @var $orders array */
 /* @var $pagination yii\data\Pagination */
 /* @var $orders_per_page int */
+/* @var $columns array */
 
 $this->title = Module::t('list', 'Orders');
 ?>
@@ -49,7 +50,7 @@ $this->title = Module::t('list', 'Orders');
         <?php foreach ($statuses as $status): ?>
             <li <?php if ($selected_status === $status['status']): ?>class="active"<?php endif; ?>>
                 <a href="<?= Url::toRoute(['/orders_list/order/list', 'status' => $status['status']]) ?>">
-                    <?= $status['title'] ?>
+                    <?= $status['label'] ?>
                 </a>
             </li>
         <?php endforeach; ?>
@@ -61,7 +62,7 @@ $this->title = Module::t('list', 'Orders');
 
                     <select class="form-control search-select" name="search-type">
                         <?php foreach ($search_types as $code => $type): ?>
-                            <option value="<?= $code ?>" <?php if ($code == $selected_search_type): ?>selected=""<?php endif; ?>><?= $type['title'] ?></option>
+                            <option value="<?= $code ?>" <?php if ($code == $selected_search_type): ?>selected=""<?php endif; ?>><?= $type['label'] ?></option>
                         <?php endforeach; ?>
                     </select>
                     <button type="submit" class="btn btn-default"><span class="glyphicon glyphicon-search" aria-hidden="true"></span></button>
@@ -73,61 +74,62 @@ $this->title = Module::t('list', 'Orders');
     <table class="table order-table">
         <thead>
         <tr>
-            <th><?= Module::t('list', 'ID') ?></th>
-            <th><?= Module::t('list', 'User') ?></th>
-            <th><?= Module::t('list', 'Link') ?></th>
-            <th><?= Module::t('list', 'Quantity') ?></th>
-            <th class="dropdown-th">
-                <div class="dropdown">
-                    <button class="btn btn-th btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                        <?= Module::t('list', 'Service') ?>
-                        <span class="caret"></span>
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-                        <li <?php if (!$selected_service_id): ?>class="active"<?php endif; ?>>
-                            <a href="<?= Url::current(['service_id' => null]) ?>">
-                                <?= Module::t('list', 'All') ?> (<?= $services_total_orders_number ?>)
-                            </a>
-                        </li>
-                        <?php foreach ($services as $service): ?>
-                            <li
-                                <?php if ($selected_service_id == $service['id']): ?>
-                                    class="active"
-                                <?php elseif (!$service['orders_number']): ?>
-                                    class="disabled" aria-disabled="true"
-                                <?php endif; ?>>
-                                <a href="<?= Url::current(['service_id' => $service['id']]) ?>">
-                                    <span class="label-id"><?= $service['orders_number'] ?></span> <?= $service['name'] ?>
-                                </a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-            </th>
-            <th><?= Module::t('list', 'Status') ?></th>
-            <th class="dropdown-th">
-                <div class="dropdown">
-                    <button class="btn btn-th btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                        <?= Module::t('list', 'Mode') ?>
-                        <span class="caret"></span>
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-                        <li <?php if (!$selected_mode): ?>class="active"<?php endif; ?>>
-                            <a href="<?= Url::current(['mode' => null]) ?>">
-                                <?= Module::t('list', 'All') ?>
-                            </a>
-                        </li>
-                        <?php foreach ($modes as $mode): ?>
-                            <li <?php if ($selected_mode === $mode['mode']): ?>class="active"<?php endif; ?>>
-                                <a href="<?= Url::current(['mode' => $mode['mode']]) ?>">
-                                    <?= $mode['title'] ?>
-                                </a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-            </th>
-            <th><?= Module::t('list', 'Created') ?></th>
+            <?php foreach ($columns as $column): ?>
+                <?php if ('service_name' === $column['attribute']): ?>
+                    <th class="dropdown-th">
+                        <div class="dropdown">
+                            <button class="btn btn-th btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                <?= Module::t('list', 'Service') ?>
+                                <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                                <li <?php if (!$selected_service_id): ?>class="active"<?php endif; ?>>
+                                    <a href="<?= Url::current(['service_id' => null]) ?>">
+                                        <?= Module::t('list', 'All') ?> (<?= $orders_number_for_all_services ?>)
+                                    </a>
+                                </li>
+                                <?php foreach ($services as $service): ?>
+                                    <li
+                                        <?php if ($selected_service_id == $service['id']): ?>
+                                            class="active"
+                                        <?php elseif (!$service['orders_number']): ?>
+                                            class="disabled" aria-disabled="true"
+                                        <?php endif; ?>>
+                                        <a href="<?= Url::current(['service_id' => $service['id']]) ?>">
+                                            <span class="label-id"><?= $service['orders_number'] ?></span> <?= $service['name'] ?>
+                                        </a>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    </th>
+                <?php elseif ('mode' === $column['attribute']): ?>
+                    <th class="dropdown-th">
+                        <div class="dropdown">
+                            <button class="btn btn-th btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                <?= Module::t('list', 'Mode') ?>
+                                <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                                <li <?php if (!$selected_mode): ?>class="active"<?php endif; ?>>
+                                    <a href="<?= Url::current(['mode' => null]) ?>">
+                                        <?= Module::t('list', 'All') ?>
+                                    </a>
+                                </li>
+                                <?php foreach ($modes as $mode): ?>
+                                    <li <?php if ($selected_mode === $mode['mode']): ?>class="active"<?php endif; ?>>
+                                        <a href="<?= Url::current(['mode' => $mode['mode']]) ?>">
+                                            <?= $mode['label'] ?>
+                                        </a>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    </th>
+                <?php else: ?>
+                    <th><?= $column['label'] ?></th>
+                <?php endif; ?>
+            <?php endforeach; ?>
         </tr>
         </thead>
         <tbody>
@@ -148,7 +150,7 @@ $this->title = Module::t('list', 'Orders');
         <?php endforeach; ?>
         </tbody>
     </table>
-    <?php if ($total_orders_number > $orders_per_page): ?>
+    <?php if ($orders_number_for_selected_service > $orders_per_page): ?>
         <div class="row">
             <div class="col-sm-8">
                 <nav>
@@ -156,7 +158,7 @@ $this->title = Module::t('list', 'Orders');
                 </nav>
             </div>
             <div class="col-sm-4 pagination-counters">
-                <?= $pagination->getOffset() + 1 ?> <?= Module::t('list', 'to') ?> <?= $pagination->getOffset() + count($orders) ?> <?= Module::t('list', 'of') ?> <?= $total_orders_number ?>
+                <?= $pagination->getOffset() + 1 ?> <?= Module::t('list', 'to') ?> <?= $pagination->getOffset() + count($orders) ?> <?= Module::t('list', 'of') ?> <?= $orders_number_for_selected_service ?>
             </div>
         </div>
     <?php endif; ?>
