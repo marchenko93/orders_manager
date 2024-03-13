@@ -18,14 +18,4 @@ class Order extends ActiveRecord
     {
         return 'orders';
     }
-
-    public function getService()
-    {
-        return $this->hasOne(Service::class, ['id' => 'service_id']);
-    }
-
-    public function getUser()
-    {
-        return $this->hasOne(User::class, ['id' => 'user_id']);
-    }
 }
