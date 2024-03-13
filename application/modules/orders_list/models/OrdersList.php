@@ -27,6 +27,7 @@ class OrdersList extends Model
     private array $searchTypes;
     private array $columns;
     private array $services;
+    private array $ordersQuerySelectColumns;
 
     public function __construct(
         array $config = [],
@@ -49,6 +50,17 @@ class OrdersList extends Model
         if ($this->serviceId && !array_key_exists($this->serviceId, $this->services)) {
             throw new BadRequestHttpException('Invalid service ID.');
         }
+        $this->ordersQuerySelectColumns = [
+            'o.id',
+            'username' => 'CONCAT(u.first_name, " ", u.last_name)',
+            'o.link',
+            'o.quantity',
+            'o.service_id',
+            'service_name' => 's.name',
+            'status' => $this->getStatusExpression(),
+            'mode' => $this->getModeExpression(),
+            'created_at' => 'FROM_UNIXTIME(o.created_at, "%Y-%m-%d %h:%i:%s")',
+        ];
     }
 
     public function rules(): array
@@ -90,18 +102,7 @@ class OrdersList extends Model
     public function getOrdersQuery(): Query
     {
         $query = (new Query())
-            ->select([
-                'o.id',
-                'username' => 'CONCAT(u.first_name, " ", u.last_name)',
-                'o.link',
-                'o.quantity',
-                'o.service_id',
-                'service_name' => 's.name',
-                'service_orders_number' => $this->getServiceExpression(),
-                'status' => $this->getStatusExpression(),
-                'mode' => $this->getModeExpression(),
-                'created_at' => 'FROM_UNIXTIME(o.created_at, "%Y-%m-%d %h:%i:%s")',
-            ])
+            ->select($this->ordersQuerySelectColumns)
             ->from('orders o')
             ->innerJoin('users u', 'o.user_id = u.id')
             ->innerJoin('services s', 'o.service_id = s.id')
@@ -132,6 +133,11 @@ class OrdersList extends Model
 
     public function exportQueryResultToCsv(Query $query): void
     {
+        $selectColumns = array_merge(
+            $this->ordersQuerySelectColumns,
+            ['service_orders_number' => $this->getServiceExpression()]
+        );
+        $query->select($selectColumns);
         $exporter = new CsvGrid([
             'dataProvider' => new ActiveDataProvider([
                 'query' => $query,
