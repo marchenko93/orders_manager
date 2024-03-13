@@ -28,6 +28,7 @@ class OrdersList extends Model
     private array $columns;
     private array $services;
     private array $ordersQuerySelectColumns;
+    private ?array $searchUserIds = null;
 
     public function __construct(
         array $config = [],
@@ -45,6 +46,9 @@ class OrdersList extends Model
         $this->serviceId = $serviceId;
         if (!$this->validate()) {
             throw new BadRequestHttpException(implode('.', $this->errors));
+        }
+        if (self::SEARCH_TYPE_USERNAME === $searchType) {
+            $this->loadSearchUserIdsFromDb();
         }
         $this->loadServicesFromDatabase();
         if ($this->serviceId && !array_key_exists($this->serviceId, $this->services)) {
@@ -279,9 +283,13 @@ class OrdersList extends Model
             $query->andWhere('s.id=:id', [':id' => $this->serviceId]);
         }
         if (!is_null($this->searchType) && $this->search) {
-            $selectExpression = $this->searchTypes[$this->searchType]['select_expression'];
-            $operation = static::SEARCH_TYPE_ORDER_ID == $this->searchType ? '=' : 'LIKE';
-            $query->andWhere([$operation, $selectExpression, $this->search]);
+            if (static::SEARCH_TYPE_ORDER_ID == $this->searchType) {
+                $query->andWhere(['=', 'o.id', $this->search]);
+            } elseif (static::SEARCH_TYPE_USERNAME == $this->searchType) {
+                $query->andWhere(['in', 'u.id', $this->searchUserIds]);
+            } elseif (static::SEARCH_TYPE_LINK == $this->searchType) {
+                $query->andWhere(['like', 'o.link', $this->search]);
+            }
         }
     }
 
@@ -333,5 +341,31 @@ class OrdersList extends Model
         }
         $sqlExpression .= 'END';
         return new Expression($sqlExpression);
+    }
+
+    private function loadSearchUserIdsFromDb(): void
+    {
+        $nameWords = explode(' ', preg_replace('/\s+/', ' ', trim($this->search)));
+        $firstWord = $nameWords[0];
+        $secondWord = $nameWords[1] ?? false;
+        $firstNameIdsQuery =(new Query())
+            ->select('id')
+            ->from('users')
+            ->where('first_name = :first_name', [':first_name' => $firstWord])
+        ;
+        $lastNameIdsQuery = (new Query())
+            ->select('id')
+            ->from('users')
+            ->where('last_name = :last_name', [':last_name' => $firstWord])
+        ;
+
+        if ($secondWord) {
+            $firstNameIdsQuery->andWhere('last_name = :last_name', [':last_name' => $secondWord]);
+            $lastNameIdsQuery->andWhere('first_name = :first_name', [':first_name' => $secondWord]);
+        }
+
+        $firstNameIds = $firstNameIdsQuery->column();
+        $lastNameIds = $lastNameIdsQuery->column();
+        $this->searchUserIds = array_merge($firstNameIds, $lastNameIds);
     }
 }
