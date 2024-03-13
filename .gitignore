@@ -34,5 +34,3 @@ application/.vagrant
 
 #database data and dump to create DB schema and insert data to it
 docker/db/data
-docker/db/dumps
-
