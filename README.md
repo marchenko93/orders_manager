@@ -1,11 +1,6 @@
-1) Скопируйте дампы для создания схемы и данных в директорию /docker/db/dumps и добавить к именам дампов префиксы, чтобы они выполнились в правильном порядке
-a_test_db_structure.sql
-b_test_db_data.sql
-
-2) Создайте копию файл .env.example и переименуйте ее в .env.
-Добавьте эти значения для переменных окружения с пустыми значениями
-DATABASE_DSN='mysql:host=db;dbname=orders_manager'
-DATABASE_USERNAME='sergey'
-DATABASE_PASSWORD='ks2905'
-
-3) Запустите команду docker-compose run -w /usr/src/app/application php-cli composer install
+1. Клонируйте репозиторий.
+2. Перейдите в директорию проекта.
+3. Запустите команду  docker-compose up -d --build.
+4. Запустите команду docker-compose run -w /usr/src/app/application php-cli composer install.
+5. Главная страница со списком заказов будет доступна по адресу http://localhost:${NGINX_PORT}/${URL_RULE_WITHOUT_STATUS}.
+6. Для вывода текста на другом языке, нужно передать его через GET-параметр lang. Формат для установки языка/локали: ll-CC, где ll - это двух или трёхбуквенный код языка в нижнем регистре в соответствии со стандартом ISO-63911, а CC - это код страны в соответствии со стандартом ISO-316612. Для примера добавлены переводы для русского языка (lang=ru-RU).
