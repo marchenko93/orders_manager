@@ -317,7 +317,7 @@ class OrdersList extends Model
     {
         $sqlExpression = 'CASE o.mode ';
         foreach ($this->modes as $code => $mode) {
-            $sqlExpression .= 'WHEN ' . $code . ' THEN "'. $mode['label'] . '" ';
+            $sqlExpression .= 'WHEN ' . $code . ' THEN "' . $mode['label'] . '" ';
         }
         $sqlExpression .= 'END';
         return new Expression($sqlExpression);
@@ -327,7 +327,7 @@ class OrdersList extends Model
     {
         $sqlExpression = 'CASE o.status ';
         foreach ($this->statuses as $code => $status) {
-            $sqlExpression .= 'WHEN ' . $code . ' THEN "'. $status['label'] . '" ';
+            $sqlExpression .= 'WHEN ' . $code . ' THEN "' . $status['label'] . '" ';
         }
         $sqlExpression .= 'END';
         return new Expression($sqlExpression);
@@ -337,7 +337,7 @@ class OrdersList extends Model
     {
         $sqlExpression = 'CASE o.service_id ';
         foreach ($this->services as $serviceId => $service) {
-            $sqlExpression .= 'WHEN ' . $serviceId . ' THEN "'. $service['orders_number'] . '" ';
+            $sqlExpression .= 'WHEN ' . $serviceId . ' THEN "' . $service['orders_number'] . '" ';
         }
         $sqlExpression .= 'END';
         return new Expression($sqlExpression);
@@ -348,7 +348,7 @@ class OrdersList extends Model
         $nameWords = explode(' ', preg_replace('/\s+/', ' ', trim($this->search)));
         $firstWord = $nameWords[0];
         $secondWord = $nameWords[1] ?? false;
-        $firstNameIdsQuery =(new Query())
+        $firstNameIdsQuery = (new Query())
             ->select('id')
             ->from('users')
             ->where('first_name = :first_name', [':first_name' => $firstWord])
