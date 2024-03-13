@@ -191,18 +191,9 @@ class OrdersList extends Model
         ];
 
         $this->searchTypes = [
-            self::SEARCH_TYPE_ORDER_ID => [
-                'select_expression' => 'o.id',
-                'label' => Module::t('list', 'Order ID')
-            ],
-            self::SEARCH_TYPE_LINK => [
-                'select_expression' => 'o.link',
-                'label' => Module::t('list', 'Link')
-            ],
-            self::SEARCH_TYPE_USERNAME => [
-                'select_expression' => 'CONCAT(u.first_name, " ", u.last_name)',
-                'label' => Module::t('list', 'Username')
-            ],
+            self::SEARCH_TYPE_ORDER_ID => ['label' => Module::t('list', 'Order ID')],
+            self::SEARCH_TYPE_LINK => ['label' => Module::t('list', 'Link')],
+            self::SEARCH_TYPE_USERNAME => ['label' => Module::t('list', 'Username')],
         ];
 
         $this->columns = [
