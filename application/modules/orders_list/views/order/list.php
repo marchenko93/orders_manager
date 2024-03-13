@@ -19,6 +19,7 @@ use yii\widgets\LinkPager;
 /* @var $pagination yii\data\Pagination */
 /* @var $orders_per_page int */
 /* @var $columns array */
+/* @var $language string|null */
 
 $this->title = Module::t('list', 'Orders');
 ?>
@@ -35,7 +36,7 @@ $this->title = Module::t('list', 'Orders');
         </div>
         <div class="collapse navbar-collapse" id="bs-navbar-collapse">
             <ul class="nav navbar-nav">
-                <li class="active"><a href="<?= Url::toRoute(['/orders_list/order/list']) ?>"><?= Module::t('list', 'Orders') ?></a></li>
+                <li class="active"><a href="<?= Url::toRoute(['/orders_list/order/list', 'lang' => $language]) ?>"><?= Module::t('list', 'Orders') ?></a></li>
             </ul>
         </div>
     </div>
@@ -43,19 +44,22 @@ $this->title = Module::t('list', 'Orders');
 <div class="container-fluid">
     <ul class="nav nav-tabs p-b">
         <li <?php if (!$selected_status): ?>class="active"<?php endif; ?>>
-            <a href="<?= Url::toRoute(['/orders_list/order/list']) ?>">
+            <a href="<?= Url::toRoute(['/orders_list/order/list', 'lang' => $language]) ?>">
                 <?= Module::t('list', 'All orders') ?>
             </a>
         </li>
         <?php foreach ($statuses as $status): ?>
             <li <?php if ($selected_status === $status['status']): ?>class="active"<?php endif; ?>>
-                <a href="<?= Url::toRoute(['/orders_list/order/list', 'status' => $status['status']]) ?>">
+                <a href="<?= Url::toRoute(['/orders_list/order/list', 'status' => $status['status'], 'lang' => $language]) ?>">
                     <?= $status['label'] ?>
                 </a>
             </li>
         <?php endforeach; ?>
         <li class="pull-right custom-search">
             <form class="form-inline" action="<?= Url::current() ?>" method="get">
+                <?php if ($language): ?>
+                    <input type="hidden" name="lang" value="<?= $language ?>">
+                <?php endif; ?>
                 <div class="input-group">
                     <input type="text" name="search" class="form-control" value="<?= Html::encode($search) ?>" placeholder="<?= Module::t('list', 'Search orders') ?>">
                     <span class="input-group-btn search-select-wrap">

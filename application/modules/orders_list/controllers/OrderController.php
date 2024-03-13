@@ -9,6 +9,8 @@ use yii\web\Controller;
 
 class OrderController extends Controller
 {
+    private const string DEFAULT_LANGUAGE = 'en-US';
+
     public function actionList(string $status = ''): string
     {
         $request = Yii::$app->request;
@@ -47,6 +49,7 @@ class OrderController extends Controller
             'orders_number_for_selected_service' => $ordersNumberForSelectedService,
             'orders_number_for_all_services' => $ordersList->getOrdersNumberForAllServices(),
             'columns' => $ordersList->getColumns(),
+            'language' => Yii::$app->language !== self::DEFAULT_LANGUAGE ? Yii::$app->language : null,
         ]);
     }
 }
