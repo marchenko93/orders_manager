@@ -59,7 +59,6 @@ $config = [
             'class' => 'orders_list\Module'
         ],
     ],
-    'language' => $_ENV['APP_LANGUAGE'],
     'defaultRoute' => 'orders_list/order/list',
 ];
 

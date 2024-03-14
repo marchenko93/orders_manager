@@ -21,7 +21,6 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       DATABASE_DSN: ${DATABASE_DSN}
-      APP_LANGUAGE: ${APP_LANGUAGE}
     ports:
       - "9000"
     volumes:
