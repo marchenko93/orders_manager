@@ -7,25 +7,27 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USERNAME}
+      MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3306"
+      - "${MYSQL_PORT}:3306"
     volumes:
       - ./docker/db/dumps:/docker-entrypoint-initdb.d
       - ./docker/db/data:/var/lib/mysql
 
-  php-cli:
-    build: ./docker/dockerfiles/php-cli
-    volumes:
-      - ./:/usr/src/app
-
   php-fpm:
     build: ./docker/dockerfiles/php-fpm
+    environment:
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      DATABASE_DSN: ${DATABASE_DSN}
+      URL_RULE_WITHOUT_STATUS: ${URL_RULE_WITHOUT_STATUS}
+      URL_RULE_WITH_STATUS: ${URL_RULE_WITH_STATUS}
+      APP_LANGUAGE: ${APP_LANGUAGE}
     ports:
       - "9000"
     volumes:
-      - ./:/usr/src/app
+      - ./application:/usr/src/app
 
   nginx:
     image: nginx:1.25
@@ -33,6 +35,6 @@ services:
       - "${NGINX_PORT}:80"
     volumes:
       - ./docker/configuration_files/nginx_default.conf:/etc/nginx/conf.d/default.conf
-      - ./:/usr/src/app
+      - ./application/web:/usr/src/app/web
     depends_on:
       - php-fpm
