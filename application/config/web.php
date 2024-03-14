@@ -47,8 +47,8 @@ $config = [
             'showScriptName' => false,
             'enableStrictParsing' => false,
             'rules' => [
-                $_ENV['URL_RULE_WITH_STATUS'] => 'orders_list/order/list',
-                $_ENV['URL_RULE_WITHOUT_STATUS'] => 'orders_list/order/list',
+                'orders/<status:pending|inprogress|completed|canceled|error>' => 'orders_list/order/list',
+                'orders' => 'orders_list/order/list',
             ],
         ],
     ],
