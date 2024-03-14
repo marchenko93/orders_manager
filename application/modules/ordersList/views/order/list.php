@@ -1,5 +1,5 @@
 <?php
-use orders_list\Module;
+use ordersList\Module;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\widgets\LinkPager;
@@ -36,7 +36,7 @@ $this->title = Module::t('list', 'Orders');
         </div>
         <div class="collapse navbar-collapse" id="bs-navbar-collapse">
             <ul class="nav navbar-nav">
-                <li class="active"><a href="<?= Url::toRoute(['/orders_list/order/list', 'lang' => $language]) ?>"><?= Module::t('list', 'Orders') ?></a></li>
+                <li class="active"><a href="<?= Url::toRoute(['/orders-list/order/list', 'lang' => $language]) ?>"><?= Module::t('list', 'Orders') ?></a></li>
             </ul>
         </div>
     </div>
@@ -44,13 +44,13 @@ $this->title = Module::t('list', 'Orders');
 <div class="container-fluid">
     <ul class="nav nav-tabs p-b">
         <li <?php if (!$selected_status): ?>class="active"<?php endif; ?>>
-            <a href="<?= Url::toRoute(['/orders_list/order/list', 'lang' => $language]) ?>">
+            <a href="<?= Url::toRoute(['/orders-list/order/list', 'lang' => $language]) ?>">
                 <?= Module::t('list', 'All orders') ?>
             </a>
         </li>
         <?php foreach ($statuses as $status): ?>
             <li <?php if ($selected_status === $status['status']): ?>class="active"<?php endif; ?>>
-                <a href="<?= Url::toRoute(['/orders_list/order/list', 'status' => $status['status'], 'lang' => $language]) ?>">
+                <a href="<?= Url::toRoute(['/orders-list/order/list', 'status' => $status['status'], 'lang' => $language]) ?>">
                     <?= $status['label'] ?>
                 </a>
             </li>

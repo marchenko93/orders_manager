@@ -1,6 +1,6 @@
 <?php
 
-use app\modules\orders_list\assets\ListingAsset;
+use ordersList\assets\ListingAsset;
 
 ListingAsset::register($this);
 ?>

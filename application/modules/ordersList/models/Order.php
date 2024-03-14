@@ -1,6 +1,6 @@
 <?php
 
-namespace orders_list\models;
+namespace ordersList\models;
 
 use yii\db\ActiveRecord;
 
@@ -14,7 +14,7 @@ class Order extends ActiveRecord
     public const int MODE_CODE_MANUAL = 0;
     public const int MODE_CODE_AUTO = 1;
 
-    public static function tableName()
+    public static function tableName(): string
     {
         return 'orders';
     }

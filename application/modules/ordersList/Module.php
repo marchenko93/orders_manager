@@ -1,12 +1,12 @@
 <?php
 
-namespace orders_list;
+namespace ordersList;
 
 use Yii;
 
 class Module extends \yii\base\Module
 {
-    public $layout = '@orders_list/views/layouts/main.php';
+    public $layout = '@ordersList/views/layouts/main.php';
 
     public function init()
     {
@@ -16,19 +16,19 @@ class Module extends \yii\base\Module
 
     public function registerTranslations()
     {
-        Yii::$app->i18n->translations['modules/orders_list/*'] = [
+        Yii::$app->i18n->translations['modules/ordersList/*'] = [
             'class' => 'yii\i18n\PhpMessageSource',
             'sourceLanguage' => 'en-US',
-            'basePath' => '@orders_list/messages',
+            'basePath' => '@ordersList/messages',
             'fileMap' => [
-                'modules/orders_list/list' => 'list.php',
+                'modules/ordersList/list' => 'list.php',
             ],
         ];
     }
 
     public static function t($category, $message, $params = [], $language = null)
     {
-        return Yii::t('modules/orders_list/' . $category, $message, $params, $language);
+        return Yii::t('modules/ordersList/' . $category, $message, $params, $language);
     }
 
     public function beforeAction($action)

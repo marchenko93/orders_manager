@@ -10,7 +10,7 @@ $config = [
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
-        '@orders_list' => '@app/modules/orders_list',
+        '@ordersList' => '@app/modules/ordersList',
     ],
     'components' => [
         'request' => [
@@ -48,18 +48,18 @@ $config = [
             'showScriptName' => false,
             'enableStrictParsing' => false,
             'rules' => [
-                'orders/<status:pending|inprogress|completed|canceled|error>' => 'orders_list/order/list',
-                'orders' => 'orders_list/order/list',
+                'orders/<status:pending|inprogress|completed|canceled|error>' => 'orders-list/order/list',
+                'orders' => 'orders-list/order/list',
             ],
         ],
     ],
     'params' => $params,
     'modules' => [
-        'orders_list' => [
-            'class' => 'orders_list\Module'
+        'orders-list' => [
+            'class' => 'ordersList\Module'
         ],
     ],
-    'defaultRoute' => 'orders_list/order/list',
+    'defaultRoute' => 'orders-list/order/list',
 ];
 
 if (YII_ENV_DEV) {
