@@ -1,12 +1,12 @@
 <?php
 
-namespace app\modules\orders_list;
+namespace orders_list;
 
 use Yii;
 
 class Module extends \yii\base\Module
 {
-    public $layout = '@app/modules/orders_list/views/layouts/main.php';
+    public $layout = '@orders_list/views/layouts/main.php';
 
     public function init()
     {
@@ -19,7 +19,7 @@ class Module extends \yii\base\Module
         Yii::$app->i18n->translations['modules/orders_list/*'] = [
             'class' => 'yii\i18n\PhpMessageSource',
             'sourceLanguage' => 'en-US',
-            'basePath' => '@app/modules/orders_list/messages',
+            'basePath' => '@orders_list/messages',
             'fileMap' => [
                 'modules/orders_list/list' => 'list.php',
             ],

@@ -1,8 +1,8 @@
 <?php
 
-namespace app\modules\orders_list\controllers;
+namespace orders_list\controllers;
 
-use app\modules\orders_list\models\OrdersList;
+use orders_list\models\OrdersList;
 use Yii;
 use yii\data\Pagination;
 use yii\web\Controller;

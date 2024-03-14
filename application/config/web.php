@@ -10,6 +10,7 @@ $config = [
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
+        '@orders_list' => '@app/modules/orders_list',
     ],
     'components' => [
         'request' => [
@@ -55,7 +56,7 @@ $config = [
     'params' => $params,
     'modules' => [
         'orders_list' => [
-            'class' => 'app\modules\orders_list\Module'
+            'class' => 'orders_list\Module'
         ],
     ],
     'language' => $_ENV['APP_LANGUAGE'],

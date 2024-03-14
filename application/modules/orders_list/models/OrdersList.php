@@ -1,8 +1,8 @@
 <?php
 
-namespace app\modules\orders_list\models;
+namespace orders_list\models;
 
-use app\modules\orders_list\Module;
+use orders_list\Module;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
 use yii\db\Expression;

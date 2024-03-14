@@ -1,5 +1,5 @@
 <?php
-use app\modules\orders_list\Module;
+use orders_list\Module;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\widgets\LinkPager;
