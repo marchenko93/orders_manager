@@ -4,6 +4,9 @@ namespace ordersList\assets;
 
 use yii\web\AssetBundle;
 
+/**
+ * ListingAsset
+ */
 class ListingAsset extends AssetBundle
 {
     public $sourcePath = '@ordersList/resources';

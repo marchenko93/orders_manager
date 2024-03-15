@@ -7,10 +7,19 @@ use Yii;
 use yii\web\BadRequestHttpException;
 use yii\web\Controller;
 
+/**
+ * OrderController
+ */
 class OrderController extends Controller
 {
     private const string DEFAULT_LANGUAGE = 'en-US';
 
+    /**
+     * @param string $status
+     * @return string
+     * @throws BadRequestHttpException
+     * @throws \yii\base\InvalidConfigException
+     */
     public function actionList(string $status = ''): string
     {
         $ordersList = new OrdersList();

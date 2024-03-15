@@ -10,6 +10,9 @@ use yii\db\Expression;
 use yii\db\Query;
 use yii2tech\csvgrid\CsvGrid;
 
+/**
+ * OrdersList
+ */
 class OrdersList extends Model
 {
     private const int ORDERS_PER_PAGE = 100;
@@ -26,16 +29,25 @@ class OrdersList extends Model
     public array $filters;
     private ?array $searchUserIds = null;
 
+    /**
+     * @return string[]
+     */
     public function attributes(): array
     {
         return ['status', 'mode', 'search', 'searchType', 'serviceId'];
     }
 
+    /**
+     * @return void
+     */
     public function init(): void
     {
         $this->setFilters();
     }
 
+    /**
+     * @return array
+     */
     public function rules(): array
     {
         return [
@@ -48,11 +60,17 @@ class OrdersList extends Model
         ];
     }
 
+    /**
+     * @return string
+     */
     public function formName(): string
     {
         return '';
     }
 
+    /**
+     * @return void
+     */
     public function afterValidate(): void
     {
         parent::afterValidate();
@@ -68,6 +86,9 @@ class OrdersList extends Model
         $this->validateServiceId();
     }
 
+    /**
+     * @return array[]
+     */
     public function getColumnsToDisplay(): array
     {
         return [
@@ -106,6 +127,9 @@ class OrdersList extends Model
         ];
     }
 
+    /**
+     * @return int
+     */
     public function getTotalOrdersNumberWithoutServiceFilter(): int
     {
         return array_reduce(
@@ -117,6 +141,9 @@ class OrdersList extends Model
         );
     }
 
+    /**
+     * @return void
+     */
     public function prepareToGetOrders(): void
     {
         $this->pagination = new Pagination([
@@ -126,6 +153,9 @@ class OrdersList extends Model
         ]);
     }
 
+    /**
+     * @return array
+     */
     public function getOrders(): array
     {
         $ordersQuery = $this->getOrdersQuery();
@@ -137,6 +167,10 @@ class OrdersList extends Model
         return $ordersQuery->all();
     }
 
+    /**
+     * @return void
+     * @throws \yii\base\InvalidConfigException
+     */
     public function exportOrders(): void
     {
         $query = $this->getOrdersQuery();
@@ -155,6 +189,9 @@ class OrdersList extends Model
         $exporter->export()->send('orders.csv');
     }
 
+    /**
+     * @return int
+     */
     private function getTotalOrdersNumber(): int
     {
         if (!$this->serviceId) {
@@ -163,6 +200,9 @@ class OrdersList extends Model
         return $this->filters['service'][$this->serviceId]['orders_number'];
     }
 
+    /**
+     * @return array
+     */
     private function getColumnsToSelect(): array
     {
         return [
@@ -178,6 +218,9 @@ class OrdersList extends Model
         ];
     }
 
+    /**
+     * @return Query
+     */
     private function getOrdersQuery(): Query
     {
         $query = (new Query())
@@ -190,6 +233,11 @@ class OrdersList extends Model
         return $query;
     }
 
+    /**
+     * @param Query $query
+     * @param bool $isServiceFilterEnabled
+     * @return void
+     */
     private function addFiltersToQuery(Query $query, bool $isServiceFilterEnabled = true): void
     {
         if (!is_null($this->status)) {
@@ -212,6 +260,9 @@ class OrdersList extends Model
         }
     }
 
+    /**
+     * @return void
+     */
     private function setSearchUserIds(): void
     {
         $nameWords = explode(' ', preg_replace('/\s+/', ' ', trim($this->search)));
@@ -238,6 +289,9 @@ class OrdersList extends Model
         $this->searchUserIds = array_merge($firstNameIds, $lastNameIds);
     }
 
+    /**
+     * @return void
+     */
     private function validateServiceId(): void
     {
         if ($this->serviceId && !array_key_exists($this->serviceId, $this->filters['service'])) {
@@ -245,6 +299,9 @@ class OrdersList extends Model
         }
     }
 
+    /**
+     * @return Expression
+     */
     private function getModeExpression(): Expression
     {
         $sqlExpression = 'CASE o.mode ';
@@ -255,6 +312,9 @@ class OrdersList extends Model
         return new Expression($sqlExpression);
     }
 
+    /**
+     * @return Expression
+     */
     private function getStatusExpression(): Expression
     {
         $sqlExpression = 'CASE o.status ';
@@ -265,6 +325,9 @@ class OrdersList extends Model
         return new Expression($sqlExpression);
     }
 
+    /**
+     * @return Expression
+     */
     private function getServiceExpression(): Expression
     {
         $sqlExpression = 'CASE o.service_id ';
@@ -275,6 +338,9 @@ class OrdersList extends Model
         return new Expression($sqlExpression);
     }
 
+    /**
+     * @return void
+     */
     private function setFilters(): void
     {
         $this->filters = [
@@ -314,6 +380,9 @@ class OrdersList extends Model
         ];
     }
 
+    /**
+     * @return void
+     */
     private function addServiceFilter(): void
     {
         $serviceOrdersQuery = (new Query())
@@ -341,26 +410,41 @@ class OrdersList extends Model
         $this->filters['service'] = $query->indexBy('id')->all();
     }
 
+    /**
+     * @return array
+     */
     private function getValidStatuses(): array
     {
         return $this->filters['status']['values'];
     }
 
+    /**
+     * @return array
+     */
     private function getValidModes(): array
     {
         return $this->filters['mode']['values'];
     }
 
+    /**
+     * @return array
+     */
     private function getValidSearchTypes(): array
     {
         return array_keys($this->filters['searchType']['labels']);
     }
 
+    /**
+     * @return int|false
+     */
     private function getStatusCode(): int|false
     {
         return array_search($this->status, $this->filters['status']['values']);
     }
 
+    /**
+     * @return int|false
+     */
     private function getModeCode(): int|false
     {
         return array_search($this->mode, $this->filters['mode']['values']);
