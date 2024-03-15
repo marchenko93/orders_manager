@@ -3,12 +3,15 @@
 namespace ordersList\models;
 
 use ordersList\Module;
+use yii\base\InvalidConfigException;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
 use yii\data\Pagination;
 use yii\db\Expression;
 use yii\db\Query;
+use yii\web\Response;
 use yii2tech\csvgrid\CsvGrid;
+use yii\web\BadRequestHttpException;
 
 /**
  * OrdersList
@@ -69,24 +72,6 @@ class OrdersList extends Model
     }
 
     /**
-     * @return void
-     */
-    public function afterValidate(): void
-    {
-        parent::afterValidate();
-
-        if ($this->hasErrors()) {
-            return;
-        }
-
-        if (self::SEARCH_TYPE_USERNAME === $this->searchType) {
-            $this->setSearchUserIds();
-        }
-        $this->addServiceFilter();
-        $this->validateServiceId();
-    }
-
-    /**
      * @return array[]
      */
     public function getColumnsToDisplay(): array
@@ -128,36 +113,14 @@ class OrdersList extends Model
     }
 
     /**
-     * @return int
-     */
-    public function getTotalOrdersNumberWithoutServiceFilter(): int
-    {
-        return array_reduce(
-            $this->filters['service'],
-            function ($totalOrdersNumber, $service) {
-                return $totalOrdersNumber + $service['orders_number'];
-            },
-            0
-        );
-    }
-
-    /**
-     * @return void
-     */
-    public function prepareToGetOrders(): void
-    {
-        $this->pagination = new Pagination([
-            'pageSizeLimit' => [1, self::ORDERS_PER_PAGE],
-            'defaultPageSize' => self::ORDERS_PER_PAGE,
-            'totalCount' => $this->getTotalOrdersNumber(),
-        ]);
-    }
-
-    /**
      * @return array
+     * @throws BadRequestHttpException
      */
     public function getOrders(): array
     {
+        $this->validateInputParams();
+        $this->prepareFiltersToDisplay();
+        $this->setPagination();
         $ordersQuery = $this->getOrdersQuery();
         $ordersQuery
             ->select($this->getColumnsToSelect())
@@ -168,11 +131,13 @@ class OrdersList extends Model
     }
 
     /**
-     * @return void
-     * @throws \yii\base\InvalidConfigException
+     * @return Response
+     * @throws BadRequestHttpException
+     * @throws InvalidConfigException
      */
-    public function exportOrders(): void
+    public function exportOrders(): Response
     {
+        $this->validateInputParams();
         $query = $this->getOrdersQuery();
         $columnsToSelect = $this->getColumnsToSelect();
         $columnsToSelect['service'] = $this->getServiceExpression();
@@ -186,7 +151,7 @@ class OrdersList extends Model
             ]),
             'columns' => $this->getColumnsToDisplay(),
         ]);
-        $exporter->export()->send('orders.csv');
+        return $exporter->export()->send('orders.csv');
     }
 
     /**
@@ -197,7 +162,7 @@ class OrdersList extends Model
         if (!$this->serviceId) {
             return $this->getTotalOrdersNumberWithoutServiceFilter();
         }
-        return $this->filters['service'][$this->serviceId]['orders_number'];
+        return $this->filters['service']['services'][$this->serviceId]['orders_number'];
     }
 
     /**
@@ -290,13 +255,14 @@ class OrdersList extends Model
     }
 
     /**
-     * @return void
+     * @return bool
      */
-    private function validateServiceId(): void
+    private function isServiceIdValid(): bool
     {
-        if ($this->serviceId && !array_key_exists($this->serviceId, $this->filters['service'])) {
-            $this->addErrors(['serviceID' => ['Invalid service ID.']]);
+        if ($this->serviceId && !array_key_exists($this->serviceId, $this->filters['service']['services'])) {
+            return false;
         }
+        return true;
     }
 
     /**
@@ -331,7 +297,7 @@ class OrdersList extends Model
     private function getServiceExpression(): Expression
     {
         $sqlExpression = 'CASE o.service_id ';
-        foreach ($this->filters['service'] as $serviceId => $service) {
+        foreach ($this->filters['service']['services'] as $serviceId => $service) {
             $sqlExpression .= 'WHEN ' . $serviceId . ' THEN "' . $service['orders_number'] . ' ' . $service['name'] . '" ';
         }
         $sqlExpression .= 'END';
@@ -407,7 +373,7 @@ class OrdersList extends Model
             ->orderBy(['orders_number' => SORT_DESC])
         ;
 
-        $this->filters['service'] = $query->indexBy('id')->all();
+        $this->filters['service']['services'] = $query->indexBy('id')->all();
     }
 
     /**
@@ -448,5 +414,61 @@ class OrdersList extends Model
     private function getModeCode(): int|false
     {
         return array_search($this->mode, $this->filters['mode']['values']);
+    }
+
+    /**
+     * @return void
+     */
+    private function setPagination(): void
+    {
+        $this->pagination = new Pagination([
+            'pageSizeLimit' => [1, self::ORDERS_PER_PAGE],
+            'defaultPageSize' => self::ORDERS_PER_PAGE,
+            'totalCount' => $this->getTotalOrdersNumber(),
+        ]);
+    }
+
+    /**
+     * @return void
+     * @throws BadRequestHttpException
+     */
+    private function validateInputParams(): void
+    {
+        if (!$this->validate()) {
+            throw new BadRequestHttpException(implode(' ', $this->getErrorSummary(true)));
+        }
+        if (self::SEARCH_TYPE_USERNAME === $this->searchType) {
+            $this->setSearchUserIds();
+        }
+        $this->addServiceFilter();
+        if (!$this->isServiceIdValid()) {
+            throw new BadRequestHttpException('Invalid service ID.');
+        }
+    }
+
+    /**
+     * @return void
+     */
+    private function prepareFiltersToDisplay(): void
+    {
+        $this->filters['status']['selectedValue'] = $this->status;
+        $this->filters['mode']['selectedValue'] = $this->mode;
+        $this->filters['searchType']['selectedValue'] = $this->searchType;
+        $this->filters['service']['selectedValue'] = $this->serviceId;
+        $this->filters['service']['totalOrdersNumber'] = $this->getTotalOrdersNumberWithoutServiceFilter();
+    }
+
+    /**
+     * @return int
+     */
+    private function getTotalOrdersNumberWithoutServiceFilter(): int
+    {
+        return array_reduce(
+            $this->filters['service']['services'],
+            function ($totalOrdersNumber, $service) {
+                return $totalOrdersNumber + $service['orders_number'];
+            },
+            0
+        );
     }
 }

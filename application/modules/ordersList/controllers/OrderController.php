@@ -4,8 +4,10 @@ namespace ordersList\controllers;
 
 use ordersList\models\OrdersList;
 use Yii;
+use yii\base\InvalidConfigException;
 use yii\web\BadRequestHttpException;
 use yii\web\Controller;
+use yii\web\Response;
 
 /**
  * OrderController
@@ -18,30 +20,39 @@ class OrderController extends Controller
      * @param string $status
      * @return string
      * @throws BadRequestHttpException
-     * @throws \yii\base\InvalidConfigException
      */
     public function actionList(string $status = ''): string
     {
         $ordersList = new OrdersList();
-        $ordersList->load(Yii::$app->request->get());
-        if (!$ordersList->validate()) {
-            throw new BadRequestHttpException(implode(' ', $ordersList->getErrorSummary(true)));
+        if (!$ordersList->load(Yii::$app->request->get())) {
+            throw new BadRequestHttpException('An error occurred while loading input parameters.');
         }
 
-        if (Yii::$app->request->get('export')) {
-            $ordersList->exportOrders();
-        }
-
-        $ordersList->prepareToGetOrders();
+        $orders = $ordersList->getOrders();
 
         return $this->render('list', [
             'columnsToDisplay' => $ordersList->getColumnsToDisplay(),
             'filters' => $ordersList->filters,
-            'totalOrdersNumberWithoutServiceFilter' => $ordersList->getTotalOrdersNumberWithoutServiceFilter(),
-            'selectedValues' => $ordersList->attributes,
-            'orders' => $ordersList->getOrders(),
+            'search' => $ordersList->search,
+            'orders' => $orders,
             'pagination' => $ordersList->pagination,
-            'language' => Yii::$app->language !== self::DEFAULT_LANGUAGE ? Yii::$app->language : null,
+            'queryParams' => Yii::$app->request->getQueryParams(),
+            'language' => (Yii::$app->language !== self::DEFAULT_LANGUAGE) ? Yii::$app->language : null,
         ]);
+    }
+
+    /**
+     * @return Response
+     * @throws BadRequestHttpException
+     * @throws InvalidConfigException
+     */
+    public function actionExport(): Response
+    {
+        $ordersList = new OrdersList();
+        if (!$ordersList->load(Yii::$app->request->get())) {
+            throw new BadRequestHttpException('An error occurred while loading input parameters.');
+        }
+
+        return $ordersList->exportOrders();
     }
 }

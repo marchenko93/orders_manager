@@ -1,17 +1,17 @@
 <?php
 use ordersList\Module;
+use yii\data\Pagination;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\widgets\LinkPager;
 
 /* @var $columnsToDisplay array */
 /* @var $filters array */
-/* @var $totalOrdersNumberWithoutServiceFilter int */
-/* @var $selectedValues array */
+/* @var $search string|null */
 /* @var $orders array */
-/* @var $pagination yii\data\Pagination */
+/* @var $pagination Pagination */
+/* @var $queryParams array */
 /* @var $language string|null */
-
 
 $this->title = Module::t('list', 'Orders');
 ?>
@@ -35,13 +35,13 @@ $this->title = Module::t('list', 'Orders');
 </nav>
 <div class="container-fluid">
     <ul class="nav nav-tabs p-b">
-        <li <?php if (!$selectedValues['status']): ?>class="active"<?php endif; ?>>
+        <li <?php if (!$filters['status']['selectedValue']): ?>class="active"<?php endif; ?>>
             <a href="<?= Url::toRoute(['/orders-list/order/list', 'lang' => $language]) ?>">
                 <?= Module::t('list', 'All orders') ?>
             </a>
         </li>
         <?php foreach ($filters['status']['values'] as $code => $status): ?>
-            <li <?php if ($selectedValues['status'] === $status): ?>class="active"<?php endif; ?>>
+            <li <?php if ($filters['status']['selectedValue'] === $status): ?>class="active"<?php endif; ?>>
                 <a href="<?= Url::toRoute(['/orders-list/order/list', 'status' => $status, 'lang' => $language]) ?>">
                     <?= $filters['status']['labels'][$code] ?>
                 </a>
@@ -53,12 +53,12 @@ $this->title = Module::t('list', 'Orders');
                     <input type="hidden" name="lang" value="<?= $language ?>">
                 <?php endif; ?>
                 <div class="input-group">
-                    <input type="text" name="search" class="form-control" value="<?= Html::encode($selectedValues['search']) ?>" placeholder="<?= Module::t('list', 'Search orders') ?>">
+                    <input type="text" name="search" class="form-control" value="<?= Html::encode($search) ?>" placeholder="<?= Module::t('list', 'Search orders') ?>">
                     <span class="input-group-btn search-select-wrap">
 
                     <select class="form-control search-select" name="searchType">
                         <?php foreach ($filters['searchType']['labels'] as $code => $label): ?>
-                            <option value="<?= $code ?>" <?php if ($code == $selectedValues['searchType']): ?>selected=""<?php endif; ?>><?= $label ?></option>
+                            <option value="<?= $code ?>" <?php if ($code == $filters['searchType']['selectedValue']): ?>selected=""<?php endif; ?>><?= $label ?></option>
                         <?php endforeach; ?>
                     </select>
                     <button type="submit" class="btn btn-default"><span class="glyphicon glyphicon-search" aria-hidden="true"></span></button>
@@ -79,14 +79,14 @@ $this->title = Module::t('list', 'Orders');
                                 <span class="caret"></span>
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-                                <li <?php if (!$selectedValues['serviceId']): ?>class="active"<?php endif; ?>>
+                                <li <?php if (!$filters['service']['selectedValue']): ?>class="active"<?php endif; ?>>
                                     <a href="<?= Url::current(['serviceId' => null]) ?>">
-                                        <?= Module::t('list', 'All') ?> (<?= $totalOrdersNumberWithoutServiceFilter ?>)
+                                        <?= Module::t('list', 'All') ?> (<?= $filters['service']['totalOrdersNumber'] ?>)
                                     </a>
                                 </li>
-                                <?php foreach ($filters['service'] as $service): ?>
+                                <?php foreach ($filters['service']['services'] as $service): ?>
                                     <li
-                                        <?php if ($selectedValues['serviceId'] == $service['id']): ?>
+                                        <?php if ($filters['service']['selectedValue'] == $service['id']): ?>
                                             class="active"
                                         <?php elseif (!$service['orders_number']): ?>
                                             class="disabled" aria-disabled="true"
@@ -107,13 +107,13 @@ $this->title = Module::t('list', 'Orders');
                                 <span class="caret"></span>
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-                                <li <?php if (!$selectedValues['mode']): ?>class="active"<?php endif; ?>>
+                                <li <?php if (!$filters['mode']['selectedValue']): ?>class="active"<?php endif; ?>>
                                     <a href="<?= Url::current(['mode' => null]) ?>">
                                         <?= Module::t('list', 'All') ?>
                                     </a>
                                 </li>
                                 <?php foreach ($filters['mode']['values'] as $code => $mode): ?>
-                                    <li <?php if ($selectedValues['mode'] === $mode): ?>class="active"<?php endif; ?>>
+                                    <li <?php if ($filters['mode']['selectedValue'] === $mode): ?>class="active"<?php endif; ?>>
                                         <a href="<?= Url::current(['mode' => $mode]) ?>">
                                             <?= $filters['mode']['labels'][$code] ?>
                                         </a>
@@ -136,7 +136,8 @@ $this->title = Module::t('list', 'Orders');
                 <td class="link"><?= Html::encode($order['link']) ?></td>
                 <td><?= (int) $order['quantity'] ?></td>
                 <td class="service">
-                    <span class="label-id"><?= (int) $filters['service'][$order['service_id']]['orders_number'] ?></span> <?= Html::encode($filters['service'][$order['service_id']]['name']) ?>
+                    <span class="label-id"><?= (int) $filters['service']['services'][$order['service_id']]['orders_number'] ?>
+                    </span> <?= Html::encode($filters['service']['services'][$order['service_id']]['name']) ?>
                 </td>
                 <td><?=$order['status'] ?></td>
                 <td><?= Html::encode($order['mode']) ?></td>
@@ -162,5 +163,5 @@ $this->title = Module::t('list', 'Orders');
         </div>
     <?php endif; ?>
     <br>
-    <a href="<?= Url::current(['export' => 1]) ?>"><?= Module::t('list', 'Save result') ?></a>
+    <a href="<?= Url::toRoute(array_merge(['/orders-list/order/export'], $queryParams)) ?>"><?= Module::t('list', 'Save result') ?></a>
 </div>

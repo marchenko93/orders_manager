@@ -48,8 +48,16 @@ $config = [
             'showScriptName' => false,
             'enableStrictParsing' => false,
             'rules' => [
-                'orders/<status:pending|inprogress|completed|canceled|error>' => 'orders-list/order/list',
-                'orders' => 'orders-list/order/list',
+                [
+                    'pattern' => 'orders/<status:pending|inprogress|completed|canceled|error>',
+                    'route' => 'orders-list/order/list',
+                    'defaults' => ['status' => ''],
+                ],
+                [
+                    'pattern' => 'orders/export/<status:pending|inprogress|completed|canceled|error>',
+                    'route' => 'orders-list/order/export',
+                    'defaults' => ['status' => ''],
+                ],
             ],
         ],
     ],
@@ -59,7 +67,6 @@ $config = [
             'class' => 'ordersList\Module'
         ],
     ],
-    'defaultRoute' => 'orders-list/order/list',
 ];
 
 if (YII_ENV_DEV) {
