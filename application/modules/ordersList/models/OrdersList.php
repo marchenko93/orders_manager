@@ -5,198 +5,72 @@ namespace ordersList\models;
 use ordersList\Module;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
+use yii\data\Pagination;
 use yii\db\Expression;
 use yii\db\Query;
-use yii\web\BadRequestHttpException;
 use yii2tech\csvgrid\CsvGrid;
 
 class OrdersList extends Model
 {
-    public const int ORDERS_PER_PAGE = 100;
+    private const int ORDERS_PER_PAGE = 100;
     private const int SEARCH_TYPE_ORDER_ID = 1;
     private const int SEARCH_TYPE_LINK = 2;
     private const int SEARCH_TYPE_USERNAME = 3;
 
-    public ?string $status;
-    public ?string $mode;
-    public ?string $search;
-    public ?int $searchType;
-    public ?int $serviceId;
-    private array $statuses;
-    private array $modes;
-    private array $searchTypes;
-    private array $columns;
-    private array $services;
-    private array $ordersQuerySelectColumns;
+    public ?string $status = null;
+    public ?string $mode = null;
+    public ?string $search = null;
+    public ?int $searchType = null;
+    public ?int $serviceId = null;
+    public Pagination $pagination;
+    public array $filters;
     private ?array $searchUserIds = null;
 
-    public function __construct(
-        array $config = [],
-        ?string $status = null,
-        ?string $mode = null,
-        ?string $search = null,
-        ?int $searchType = null,
-        ?int $serviceId = null
-    ) {
-        parent::__construct($config);
-        $this->status = $status;
-        $this->mode = $mode;
-        $this->search = $search;
-        $this->searchType = $searchType;
-        $this->serviceId = $serviceId;
-        if (!$this->validate()) {
-            throw new BadRequestHttpException(implode('.', $this->errors));
-        }
-        if (self::SEARCH_TYPE_USERNAME === $searchType) {
-            $this->loadSearchUserIdsFromDb();
-        }
-        $this->loadServicesFromDatabase();
-        if ($this->serviceId && !array_key_exists($this->serviceId, $this->services)) {
-            throw new BadRequestHttpException('Invalid service ID.');
-        }
-        $this->ordersQuerySelectColumns = [
-            'o.id',
-            'username' => 'CONCAT(u.first_name, " ", u.last_name)',
-            'o.link',
-            'o.quantity',
-            'o.service_id',
-            'service_name' => 's.name',
-            'status' => $this->getStatusExpression(),
-            'mode' => $this->getModeExpression(),
-            'created_at' => 'FROM_UNIXTIME(o.created_at, "%Y-%m-%d %h:%i:%s")',
-        ];
+    public function attributes(): array
+    {
+        return ['status', 'mode', 'search', 'searchType', 'serviceId'];
+    }
+
+    public function init(): void
+    {
+        $this->setFilters();
     }
 
     public function rules(): array
     {
         return [
-            [['status', 'mode', 'search', 'searchType'], 'default', 'value' => null],
-            ['status', 'in', 'range' => array_map(fn ($status) => $status['status'], $this->statuses)],
-            ['mode', 'in', 'range' => array_map(fn ($mode) => $mode['mode'], $this->modes)],
+            [['status', 'mode', 'search', 'searchType', 'serviceId'], 'default', 'value' => null],
+            ['status', 'in', 'range' => $this->getValidStatuses()],
+            ['mode', 'in', 'range' => $this->getValidModes()],
             ['search', 'string'],
-            ['searchType', 'in', 'range' => array_keys($this->searchTypes)],
+            ['searchType', 'in', 'range' => $this->getValidSearchTypes()],
+            ['serviceId', 'integer']
         ];
     }
 
-    public function getStatuses(): array
+    public function formName(): string
     {
-        return $this->statuses;
+        return '';
     }
 
-    public function getModes(): array
+    public function afterValidate(): void
     {
-        return $this->modes;
-    }
+        parent::afterValidate();
 
-    public function getSearchTypes(): array
-    {
-        return $this->searchTypes;
-    }
-
-    public function getServices(): array
-    {
-        return $this->services;
-    }
-
-    public function getColumns(): array
-    {
-        return $this->columns;
-    }
-
-    public function getOrdersQuery(): Query
-    {
-        $query = (new Query())
-            ->select($this->ordersQuerySelectColumns)
-            ->from('orders o')
-            ->innerJoin('users u', 'o.user_id = u.id')
-            ->innerJoin('services s', 'o.service_id = s.id')
-            ->orderBy(['o.id' => SORT_DESC])
-        ;
-        $this->addFiltersToQuery($query);
-        return $query;
-    }
-
-    public function getOrdersNumberForAllServices(): int
-    {
-        return array_reduce(
-            $this->services,
-            function ($totalOrdersNumber, $service) {
-                return $totalOrdersNumber + $service['orders_number'];
-            },
-            0
-        );
-    }
-
-    public function getOrdersNumberForSelectedService(): int
-    {
-        if (!$this->serviceId) {
-            return $this->getOrdersNumberForAllServices();
+        if ($this->hasErrors()) {
+            return;
         }
-        return $this->services[$this->serviceId]['orders_number'];
+
+        if (self::SEARCH_TYPE_USERNAME === $this->searchType) {
+            $this->setSearchUserIds();
+        }
+        $this->addServiceFilter();
+        $this->validateServiceId();
     }
 
-    public function exportQueryResultToCsv(Query $query): void
+    public function getColumnsToDisplay(): array
     {
-        $selectColumns = array_merge(
-            $this->ordersQuerySelectColumns,
-            ['service_orders_number' => $this->getServiceExpression()]
-        );
-        $query->select($selectColumns);
-        $exporter = new CsvGrid([
-            'dataProvider' => new ActiveDataProvider([
-                'query' => $query,
-                'pagination' => [
-                    'pageSize' => static::ORDERS_PER_PAGE,
-                ],
-            ]),
-            'columns' => $this->columns,
-        ]);
-        $exporter->export()->send('orders.csv');
-    }
-
-    public function init(): void
-    {
-        $this->statuses = [
-            Order::STATUS_CODE_PENDING => [
-                'status' => 'pending',
-                'label' => Module::t('list', 'Pending')
-            ],
-            Order::STATUS_CODE_IN_PROGRESS => [
-                'status' => 'inprogress',
-                'label' => Module::t('list', 'In progress')
-            ],
-            Order::STATUS_CODE_COMPLETED => [
-                'status' => 'completed',
-                'label' => Module::t('list', 'Completed')
-            ],
-            Order::STATUS_CODE_CANCELED => [
-                'status' => 'canceled',
-                'label' => Module::t('list', 'Canceled')
-            ],
-            Order::STATUS_CODE_ERROR => [
-                'status' => 'error',
-                'label' => Module::t('list', 'Error')
-            ],
-        ];
-
-        $this->modes = [
-            Order::MODE_CODE_MANUAL => [
-                'mode' => 'manual',
-                'label' => Module::t('list', 'Manual')
-            ],
-            Order::MODE_CODE_AUTO => [
-                'mode' => 'auto',
-                'label' => Module::t('list', 'Auto')
-            ],
-        ];
-
-        $this->searchTypes = [
-            self::SEARCH_TYPE_ORDER_ID => ['label' => Module::t('list', 'Order ID')],
-            self::SEARCH_TYPE_LINK => ['label' => Module::t('list', 'Link')],
-            self::SEARCH_TYPE_USERNAME => ['label' => Module::t('list', 'Username')],
-        ];
-
-        $this->columns = [
+        return [
             [
                 'attribute' => 'id',
                 'label' => Module::t('list', 'ID')
@@ -214,12 +88,8 @@ class OrdersList extends Model
                 'label' => Module::t('list', 'Quantity')
             ],
             [
-                'attribute' => 'service_name',
+                'attribute' => 'service',
                 'label' => Module::t('list', 'Service')
-            ],
-            [
-                'attribute' => 'service_orders_number',
-                'label' => Module::t('list', 'Service orders number')
             ],
             [
                 'attribute' => 'status',
@@ -236,30 +106,88 @@ class OrdersList extends Model
         ];
     }
 
-    private function loadServicesFromDatabase(): void
+    public function getTotalOrdersNumberWithoutServiceFilter(): int
     {
-        $serviceOrdersQuery = (new Query())
-            ->select([
-                'o.service_id',
-                'orders_number' => 'COUNT(*)',
-            ])
+        return array_reduce(
+            $this->filters['service'],
+            function ($totalOrdersNumber, $service) {
+                return $totalOrdersNumber + $service['orders_number'];
+            },
+            0
+        );
+    }
+
+    public function prepareToGetOrders(): void
+    {
+        $this->pagination = new Pagination([
+            'pageSizeLimit' => [1, self::ORDERS_PER_PAGE],
+            'defaultPageSize' => self::ORDERS_PER_PAGE,
+            'totalCount' => $this->getTotalOrdersNumber(),
+        ]);
+    }
+
+    public function getOrders(): array
+    {
+        $ordersQuery = $this->getOrdersQuery();
+        $ordersQuery
+            ->select($this->getColumnsToSelect())
+            ->offset($this->pagination->offset)
+            ->limit($this->pagination->limit)
+        ;
+        return $ordersQuery->all();
+    }
+
+    public function exportOrders(): void
+    {
+        $query = $this->getOrdersQuery();
+        $columnsToSelect = $this->getColumnsToSelect();
+        $columnsToSelect['service'] = $this->getServiceExpression();
+        $query->select($columnsToSelect);
+        $exporter = new CsvGrid([
+            'dataProvider' => new ActiveDataProvider([
+                'query' => $query,
+                'pagination' => [
+                    'pageSize' => self::ORDERS_PER_PAGE,
+                ],
+            ]),
+            'columns' => $this->getColumnsToDisplay(),
+        ]);
+        $exporter->export()->send('orders.csv');
+    }
+
+    private function getTotalOrdersNumber(): int
+    {
+        if (!$this->serviceId) {
+            return $this->getTotalOrdersNumberWithoutServiceFilter();
+        }
+        return $this->filters['service'][$this->serviceId]['orders_number'];
+    }
+
+    private function getColumnsToSelect(): array
+    {
+        return [
+            'o.id',
+            'username' => 'CONCAT(u.first_name, " ", u.last_name)',
+            'o.link',
+            'o.quantity',
+            'o.service_id',
+            'service' => 's.name',
+            'status' => $this->getStatusExpression(),
+            'mode' => $this->getModeExpression(),
+            'created_at' => 'FROM_UNIXTIME(o.created_at, "%Y-%m-%d %h:%i:%s")',
+        ];
+    }
+
+    private function getOrdersQuery(): Query
+    {
+        $query = (new Query())
             ->from('orders o')
             ->innerJoin('users u', 'o.user_id = u.id')
-            ->groupBy('o.service_id')
+            ->innerJoin('services s', 'o.service_id = s.id')
+            ->orderBy(['o.id' => SORT_DESC])
         ;
-        $this->addFiltersToQuery($serviceOrdersQuery, false);
-
-        $query = (new Query())
-            ->select([
-                's.id',
-                's.name',
-                'orders_number' => 'IF(service_orders.orders_number IS NULL, 0, service_orders.orders_number)',
-            ])
-            ->from('services s')
-            ->leftJoin(['service_orders' => $serviceOrdersQuery], 's.id = service_orders.service_id')
-            ->orderBy(['orders_number' => SORT_DESC]);
-
-        $this->services = $query->indexBy('id')->all();
+        $this->addFiltersToQuery($query);
+        return $query;
     }
 
     private function addFiltersToQuery(Query $query, bool $isServiceFilterEnabled = true): void
@@ -274,67 +202,17 @@ class OrdersList extends Model
             $query->andWhere('s.id=:id', [':id' => $this->serviceId]);
         }
         if (!is_null($this->searchType) && $this->search) {
-            if (static::SEARCH_TYPE_ORDER_ID == $this->searchType) {
+            if (self::SEARCH_TYPE_ORDER_ID == $this->searchType) {
                 $query->andWhere(['=', 'o.id', $this->search]);
-            } elseif (static::SEARCH_TYPE_USERNAME == $this->searchType) {
+            } elseif (self::SEARCH_TYPE_USERNAME == $this->searchType) {
                 $query->andWhere(['in', 'u.id', $this->searchUserIds]);
-            } elseif (static::SEARCH_TYPE_LINK == $this->searchType) {
+            } elseif (self::SEARCH_TYPE_LINK == $this->searchType) {
                 $query->andWhere(['like', 'o.link', $this->search]);
             }
         }
     }
 
-    private function getStatusCode(): ?int
-    {
-        foreach ($this->statuses as $code => $status) {
-            if ($this->status === $status['status']) {
-                return $code;
-            }
-        }
-        return null;
-    }
-
-    private function getModeCode(): ?int
-    {
-        foreach ($this->modes as $code => $mode) {
-            if ($this->mode === $mode['mode']) {
-                return $code;
-            }
-        }
-        return null;
-    }
-
-    private function getModeExpression(): Expression
-    {
-        $sqlExpression = 'CASE o.mode ';
-        foreach ($this->modes as $code => $mode) {
-            $sqlExpression .= 'WHEN ' . $code . ' THEN "' . $mode['label'] . '" ';
-        }
-        $sqlExpression .= 'END';
-        return new Expression($sqlExpression);
-    }
-
-    private function getStatusExpression(): Expression
-    {
-        $sqlExpression = 'CASE o.status ';
-        foreach ($this->statuses as $code => $status) {
-            $sqlExpression .= 'WHEN ' . $code . ' THEN "' . $status['label'] . '" ';
-        }
-        $sqlExpression .= 'END';
-        return new Expression($sqlExpression);
-    }
-
-    private function getServiceExpression(): Expression
-    {
-        $sqlExpression = 'CASE o.service_id ';
-        foreach ($this->services as $serviceId => $service) {
-            $sqlExpression .= 'WHEN ' . $serviceId . ' THEN "' . $service['orders_number'] . '" ';
-        }
-        $sqlExpression .= 'END';
-        return new Expression($sqlExpression);
-    }
-
-    private function loadSearchUserIdsFromDb(): void
+    private function setSearchUserIds(): void
     {
         $nameWords = explode(' ', preg_replace('/\s+/', ' ', trim($this->search)));
         $firstWord = $nameWords[0];
@@ -358,5 +236,133 @@ class OrdersList extends Model
         $firstNameIds = $firstNameIdsQuery->column();
         $lastNameIds = $lastNameIdsQuery->column();
         $this->searchUserIds = array_merge($firstNameIds, $lastNameIds);
+    }
+
+    private function validateServiceId(): void
+    {
+        if ($this->serviceId && !array_key_exists($this->serviceId, $this->filters['service'])) {
+            $this->addErrors(['serviceID' => ['Invalid service ID.']]);
+        }
+    }
+
+    private function getModeExpression(): Expression
+    {
+        $sqlExpression = 'CASE o.mode ';
+        foreach ($this->filters['mode']['labels'] as $code => $label) {
+            $sqlExpression .= 'WHEN ' . $code . ' THEN "' . $label . '" ';
+        }
+        $sqlExpression .= 'END';
+        return new Expression($sqlExpression);
+    }
+
+    private function getStatusExpression(): Expression
+    {
+        $sqlExpression = 'CASE o.status ';
+        foreach ($this->filters['status']['labels'] as $code => $label) {
+            $sqlExpression .= 'WHEN ' . $code . ' THEN "' . $label . '" ';
+        }
+        $sqlExpression .= 'END';
+        return new Expression($sqlExpression);
+    }
+
+    private function getServiceExpression(): Expression
+    {
+        $sqlExpression = 'CASE o.service_id ';
+        foreach ($this->filters['service'] as $serviceId => $service) {
+            $sqlExpression .= 'WHEN ' . $serviceId . ' THEN "' . $service['orders_number'] . ' ' . $service['name'] . '" ';
+        }
+        $sqlExpression .= 'END';
+        return new Expression($sqlExpression);
+    }
+
+    private function setFilters(): void
+    {
+        $this->filters = [
+            'status' => [
+                'values' => [
+                    Order::STATUS_CODE_PENDING => 'pending',
+                    Order::STATUS_CODE_IN_PROGRESS => 'inprogress',
+                    Order::STATUS_CODE_COMPLETED => 'completed',
+                    Order::STATUS_CODE_CANCELED => 'canceled',
+                    Order::STATUS_CODE_ERROR => 'error',
+                ],
+                'labels' => [
+                    Order::STATUS_CODE_PENDING => Module::t('list', 'Pending'),
+                    Order::STATUS_CODE_IN_PROGRESS => Module::t('list', 'In progress'),
+                    Order::STATUS_CODE_COMPLETED => Module::t('list', 'Completed'),
+                    Order::STATUS_CODE_CANCELED => Module::t('list', 'Canceled'),
+                    Order::STATUS_CODE_ERROR => Module::t('list', 'Error'),
+                ]
+            ],
+            'mode' => [
+                'values' => [
+                    Order::MODE_CODE_MANUAL => 'manual',
+                    Order::MODE_CODE_AUTO => 'auto',
+                ],
+                'labels' => [
+                    Order::MODE_CODE_MANUAL => Module::t('list', 'Manual'),
+                    Order::MODE_CODE_AUTO => Module::t('list', 'Auto'),
+                ],
+            ],
+            'searchType' => [
+                'labels' => [
+                    self::SEARCH_TYPE_ORDER_ID => Module::t('list', 'Order ID'),
+                    self::SEARCH_TYPE_LINK => Module::t('list', 'Link'),
+                    self::SEARCH_TYPE_USERNAME => Module::t('list', 'Username'),
+                ],
+            ],
+        ];
+    }
+
+    private function addServiceFilter(): void
+    {
+        $serviceOrdersQuery = (new Query())
+            ->select([
+                'o.service_id',
+                'orders_number' => 'COUNT(*)',
+            ])
+            ->from('orders o')
+            ->innerJoin('users u', 'o.user_id = u.id')
+            ->groupBy('o.service_id')
+        ;
+        $this->addFiltersToQuery($serviceOrdersQuery, false);
+
+        $query = (new Query())
+            ->select([
+                's.id',
+                's.name',
+                'orders_number' => 'IF(service_orders.orders_number IS NULL, 0, service_orders.orders_number)',
+            ])
+            ->from('services s')
+            ->leftJoin(['service_orders' => $serviceOrdersQuery], 's.id = service_orders.service_id')
+            ->orderBy(['orders_number' => SORT_DESC])
+        ;
+
+        $this->filters['service'] = $query->indexBy('id')->all();
+    }
+
+    private function getValidStatuses(): array
+    {
+        return $this->filters['status']['values'];
+    }
+
+    private function getValidModes(): array
+    {
+        return $this->filters['mode']['values'];
+    }
+
+    private function getValidSearchTypes(): array
+    {
+        return array_keys($this->filters['searchType']['labels']);
+    }
+
+    private function getStatusCode(): int|false
+    {
+        return array_search($this->status, $this->filters['status']['values']);
+    }
+
+    private function getModeCode(): int|false
+    {
+        return array_search($this->mode, $this->filters['mode']['values']);
     }
 }
