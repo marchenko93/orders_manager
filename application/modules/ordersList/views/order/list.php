@@ -79,14 +79,14 @@ $this->title = Module::t('list', 'Orders');
                                 <span class="caret"></span>
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-                                <li <?php if (!$filters['service']['selectedValue']): ?>class="active"<?php endif; ?>>
+                                <li <?php if (empty($filters['service']['selectedValue'])): ?>class="active"<?php endif; ?>>
                                     <a href="<?= Url::current(['serviceId' => null]) ?>">
                                         <?= Module::t('list', 'All') ?> (<?= $filters['service']['totalOrdersNumber'] ?>)
                                     </a>
                                 </li>
                                 <?php foreach ($filters['service']['services'] as $service): ?>
                                     <li
-                                        <?php if ($filters['service']['selectedValue'] == $service['id']): ?>
+                                        <?php if (!empty($filters['service']['selectedValue']) && $filters['service']['selectedValue'] == $service['id']): ?>
                                             class="active"
                                         <?php elseif (!$service['orders_number']): ?>
                                             class="disabled" aria-disabled="true"

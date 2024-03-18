@@ -11,7 +11,6 @@ use yii\db\Expression;
 use yii\db\Query;
 use yii\web\Response;
 use yii2tech\csvgrid\CsvGrid;
-use yii\web\BadRequestHttpException;
 
 /**
  * OrdersList
@@ -30,7 +29,6 @@ class OrdersList extends Model
     public ?int $serviceId = null;
     public Pagination $pagination;
     public array $filters;
-    private ?array $searchUserIds = null;
 
     /**
      * @return string[]
@@ -45,7 +43,7 @@ class OrdersList extends Model
      */
     public function init(): void
     {
-        $this->setFilters();
+        $this->initFilters();
     }
 
     /**
@@ -113,15 +111,15 @@ class OrdersList extends Model
     }
 
     /**
-     * @return array
-     * @throws BadRequestHttpException
+     * @return array|bool
      */
-    public function getOrders(): array
+    public function search(): array|bool
     {
-        $this->validateInputParams();
-        $this->prepareFiltersToDisplay();
-        $this->setPagination();
+        if (!$this->validate()) {
+            return false;
+        }
         $ordersQuery = $this->getOrdersQuery();
+        $this->setPagination($ordersQuery->count());
         $ordersQuery
             ->select($this->getColumnsToSelect())
             ->offset($this->pagination->offset)
@@ -131,13 +129,14 @@ class OrdersList extends Model
     }
 
     /**
-     * @return Response
-     * @throws BadRequestHttpException
+     * @return Response|bool
      * @throws InvalidConfigException
      */
-    public function exportOrders(): Response
+    public function export(): Response|bool
     {
-        $this->validateInputParams();
+        if (!$this->validate()) {
+            return false;
+        }
         $query = $this->getOrdersQuery();
         $columnsToSelect = $this->getColumnsToSelect();
         $columnsToSelect['service'] = $this->getServiceExpression();
@@ -155,14 +154,46 @@ class OrdersList extends Model
     }
 
     /**
-     * @return int
+     * @return void
      */
-    private function getTotalOrdersNumber(): int
+    public function prepareFiltersToDisplay(): void
     {
-        if (!$this->serviceId) {
-            return $this->getTotalOrdersNumberWithoutServiceFilter();
-        }
-        return $this->filters['service']['services'][$this->serviceId]['orders_number'];
+        $this->loadServices();
+        $this->filters['status']['selectedValue'] = $this->status;
+        $this->filters['mode']['selectedValue'] = $this->mode;
+        $this->filters['searchType']['selectedValue'] = $this->searchType;
+        $this->filters['service']['selectedValue'] = $this->serviceId;
+        $this->filters['service']['totalOrdersNumber'] = $this->getTotalOrdersNumberWithoutServiceFilter();
+    }
+
+    /**
+     * @return void
+     */
+    private function loadServices(): void
+    {
+        $serviceOrdersQuery = (new Query())
+            ->select([
+                'o.service_id',
+                'orders_number' => 'COUNT(*)',
+            ])
+            ->from('orders o')
+            ->innerJoin('users u', 'o.user_id = u.id')
+            ->groupBy('o.service_id')
+        ;
+        $this->addFiltersToQuery($serviceOrdersQuery, false);
+
+        $query = (new Query())
+            ->select([
+                's.id',
+                's.name',
+                'orders_number' => 'IF(service_orders.orders_number IS NULL, 0, service_orders.orders_number)',
+            ])
+            ->from('services s')
+            ->leftJoin(['service_orders' => $serviceOrdersQuery], 's.id = service_orders.service_id')
+            ->orderBy(['orders_number' => SORT_DESC])
+        ;
+
+        $this->filters['service']['services'] = $query->indexBy('id')->all();
     }
 
     /**
@@ -218,7 +249,7 @@ class OrdersList extends Model
             if (self::SEARCH_TYPE_ORDER_ID == $this->searchType) {
                 $query->andWhere(['=', 'o.id', $this->search]);
             } elseif (self::SEARCH_TYPE_USERNAME == $this->searchType) {
-                $query->andWhere(['in', 'u.id', $this->searchUserIds]);
+                $query->andWhere(['in', 'u.id', $this->getSearchUserIds()]);
             } elseif (self::SEARCH_TYPE_LINK == $this->searchType) {
                 $query->andWhere(['like', 'o.link', $this->search]);
             }
@@ -226,9 +257,9 @@ class OrdersList extends Model
     }
 
     /**
-     * @return void
+     * @return array
      */
-    private function setSearchUserIds(): void
+    private function getSearchUserIds(): array
     {
         $nameWords = explode(' ', preg_replace('/\s+/', ' ', trim($this->search)));
         $firstWord = $nameWords[0];
@@ -251,18 +282,7 @@ class OrdersList extends Model
 
         $firstNameIds = $firstNameIdsQuery->column();
         $lastNameIds = $lastNameIdsQuery->column();
-        $this->searchUserIds = array_merge($firstNameIds, $lastNameIds);
-    }
-
-    /**
-     * @return bool
-     */
-    private function isServiceIdValid(): bool
-    {
-        if ($this->serviceId && !array_key_exists($this->serviceId, $this->filters['service']['services'])) {
-            return false;
-        }
-        return true;
+        return array_merge($firstNameIds, $lastNameIds);
     }
 
     /**
@@ -296,6 +316,7 @@ class OrdersList extends Model
      */
     private function getServiceExpression(): Expression
     {
+        $this->loadServices();
         $sqlExpression = 'CASE o.service_id ';
         foreach ($this->filters['service']['services'] as $serviceId => $service) {
             $sqlExpression .= 'WHEN ' . $serviceId . ' THEN "' . $service['orders_number'] . ' ' . $service['name'] . '" ';
@@ -307,7 +328,7 @@ class OrdersList extends Model
     /**
      * @return void
      */
-    private function setFilters(): void
+    private function initFilters(): void
     {
         $this->filters = [
             'status' => [
@@ -344,36 +365,6 @@ class OrdersList extends Model
                 ],
             ],
         ];
-    }
-
-    /**
-     * @return void
-     */
-    private function addServiceFilter(): void
-    {
-        $serviceOrdersQuery = (new Query())
-            ->select([
-                'o.service_id',
-                'orders_number' => 'COUNT(*)',
-            ])
-            ->from('orders o')
-            ->innerJoin('users u', 'o.user_id = u.id')
-            ->groupBy('o.service_id')
-        ;
-        $this->addFiltersToQuery($serviceOrdersQuery, false);
-
-        $query = (new Query())
-            ->select([
-                's.id',
-                's.name',
-                'orders_number' => 'IF(service_orders.orders_number IS NULL, 0, service_orders.orders_number)',
-            ])
-            ->from('services s')
-            ->leftJoin(['service_orders' => $serviceOrdersQuery], 's.id = service_orders.service_id')
-            ->orderBy(['orders_number' => SORT_DESC])
-        ;
-
-        $this->filters['service']['services'] = $query->indexBy('id')->all();
     }
 
     /**
@@ -417,45 +408,16 @@ class OrdersList extends Model
     }
 
     /**
+     * @param int $totalCount
      * @return void
      */
-    private function setPagination(): void
+    private function setPagination(int $totalCount): void
     {
         $this->pagination = new Pagination([
             'pageSizeLimit' => [1, self::ORDERS_PER_PAGE],
             'defaultPageSize' => self::ORDERS_PER_PAGE,
-            'totalCount' => $this->getTotalOrdersNumber(),
+            'totalCount' => $totalCount,
         ]);
-    }
-
-    /**
-     * @return void
-     * @throws BadRequestHttpException
-     */
-    private function validateInputParams(): void
-    {
-        if (!$this->validate()) {
-            throw new BadRequestHttpException(implode(' ', $this->getErrorSummary(true)));
-        }
-        if (self::SEARCH_TYPE_USERNAME === $this->searchType) {
-            $this->setSearchUserIds();
-        }
-        $this->addServiceFilter();
-        if (!$this->isServiceIdValid()) {
-            throw new BadRequestHttpException('Invalid service ID.');
-        }
-    }
-
-    /**
-     * @return void
-     */
-    private function prepareFiltersToDisplay(): void
-    {
-        $this->filters['status']['selectedValue'] = $this->status;
-        $this->filters['mode']['selectedValue'] = $this->mode;
-        $this->filters['searchType']['selectedValue'] = $this->searchType;
-        $this->filters['service']['selectedValue'] = $this->serviceId;
-        $this->filters['service']['totalOrdersNumber'] = $this->getTotalOrdersNumberWithoutServiceFilter();
     }
 
     /**

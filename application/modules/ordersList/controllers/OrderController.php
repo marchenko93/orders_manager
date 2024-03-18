@@ -17,18 +17,21 @@ class OrderController extends Controller
     private const string DEFAULT_LANGUAGE = 'en-US';
 
     /**
-     * @param string $status
      * @return string
      * @throws BadRequestHttpException
      */
-    public function actionList(string $status = ''): string
+    public function actionList(): string
     {
         $ordersList = new OrdersList();
         if (!$ordersList->load(Yii::$app->request->get())) {
             throw new BadRequestHttpException('An error occurred while loading input parameters.');
         }
 
-        $orders = $ordersList->getOrders();
+        $orders = $ordersList->search();
+        if (false === $orders) {
+            throw new BadRequestHttpException(implode(' ', $ordersList->getFirstErrors()));
+        }
+        $ordersList->prepareFiltersToDisplay();
 
         return $this->render('list', [
             'columnsToDisplay' => $ordersList->getColumnsToDisplay(),
@@ -53,6 +56,11 @@ class OrderController extends Controller
             throw new BadRequestHttpException('An error occurred while loading input parameters.');
         }
 
-        return $ordersList->exportOrders();
+        $response = $ordersList->export();
+        if (false === $response) {
+            throw new BadRequestHttpException(implode(' ', $ordersList->getFirstErrors()));
+        }
+
+        return $response;
     }
 }
